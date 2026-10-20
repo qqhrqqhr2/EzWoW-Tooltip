@@ -21,7 +21,7 @@
 ## Notes-zhCN: 角色、NPC、物品与法术鼠标提示美化与信息扩展 (/ezt, /eztooltip, /툴팁)
 ## Notes-zhTW: 角色、NPC、物品與法術滑鼠提示美化與資訊擴充 (/ezt, /eztooltip, /툴팁)
 ## Author: qqhrqqhr2
-## Version: 2.0.1
+## Version: 2.0.2
 ## Category: EzWoW
 ## X-License: GPL-3.0
 ## X-Website: https://github.com/qqhrqqhr2/EzWoW-Tooltip
