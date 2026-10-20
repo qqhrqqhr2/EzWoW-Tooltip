@@ -552,52 +552,90 @@ function AuctionPriceScanner.prepareAuctionScanButton()
     actionBtn:Show()
 end
 
+local JUNK_SELL_BATCH = 10      -- items sold per tick (the server rejects large single-frame bursts)
+local JUNK_SELL_INTERVAL = 0.25
+
+function AuctionPriceScanner.readJunkSlot(bag, slot)
+    local link, stackCount, quality, locked
+    if C_Container and C_Container.GetContainerItemInfo then
+        local apiInfo = C_Container.GetContainerItemInfo(bag, slot)
+        if apiInfo then
+            link = apiInfo.hyperlink
+            stackCount = apiInfo.stackCount or 1
+            quality = apiInfo.quality
+            locked = apiInfo.isLocked
+        end
+    elseif GetContainerItemInfo then
+        local _, itemCountEntry, hasLocked, itemQuality, _, _, itemLink = GetContainerItemInfo(bag, slot)
+        link = itemLink
+        stackCount = itemCountEntry or 1
+        quality = itemQuality
+        locked = hasLocked
+    end
+    if not link or locked then return nil end
+    local _, _, infoQuality, _, _, _, _, _, _, _, sellPrice = GetItemInfo(link)
+    quality = quality or infoQuality
+    if quality == 0 and sellPrice and sellPrice > 0 then
+        return link, stackCount or 1, sellPrice
+    end
+end
+
+function AuctionPriceScanner.sellJunkInBatches()
+    local queue = {}
+    local maxBags = NUM_BAG_SLOTS or 4
+    for bag = 0, maxBags do
+        local numSlots = (C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerNumSlots(bag))
+            or (GetContainerNumSlots and GetContainerNumSlots(bag)) or 0
+        for slot = 1, numSlots do
+            local link = AuctionPriceScanner.readJunkSlot(bag, slot)
+            if link then queue[#queue + 1] = { bag = bag, slot = slot, link = link } end
+        end
+    end
+    if #queue == 0 then return end
+
+    local soldCount, soldCopper, cursor = 0, 0, 1
+    local function finish()
+        if soldCount > 0 and soldCopper > 0 then
+            print("|cffAEE26AEzWoW - Tooltip:|r " .. format(resolveExtraLocaleText("autoSellDone"), soldCount, addon.FormatCopperAsCoinIcons(soldCopper) or tostring(soldCopper)))
+        end
+    end
+    local function step()
+        if not (MerchantFrame and MerchantFrame:IsShown()) then return finish() end
+        local sentThisTick = 0
+        while cursor <= #queue and sentThisTick < JUNK_SELL_BATCH do
+            local q = queue[cursor]
+            cursor = cursor + 1
+            -- re-check: another addon (or the player) may have sold/moved it already
+            local link, stackCount, sellPrice = AuctionPriceScanner.readJunkSlot(q.bag, q.slot)
+            if link and link == q.link then
+                local ok
+                if C_Container and C_Container.UseContainerItem then
+                    ok = pcall(C_Container.UseContainerItem, q.bag, q.slot)
+                elseif UseContainerItem then
+                    ok = pcall(UseContainerItem, q.bag, q.slot)
+                end
+                if ok then
+                    soldCount = soldCount + stackCount
+                    soldCopper = soldCopper + sellPrice * stackCount
+                    sentThisTick = sentThisTick + 1
+                end
+            end
+        end
+        if cursor <= #queue and C_Timer and C_Timer.After then
+            C_Timer.After(JUNK_SELL_INTERVAL, step)
+        else
+            finish()
+        end
+    end
+    step()
+end
+
 function AuctionPriceScanner.handleMerchantShow()
     if IsShiftKeyDown and IsShiftKeyDown() then return end
     local iCfg = addon.db and addon.db.item
 
     if not iCfg or iCfg.autoSellJunk ~= false then
-        local soldCount = 0
-        local soldCopper = 0
-        local maxBags = NUM_BAG_SLOTS or 4
-        for bag = 0, maxBags do
-            local numSlots = (C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerNumSlots(bag))
-                or (GetContainerNumSlots and GetContainerNumSlots(bag)) or 0
-            for slot = 1, numSlots do
-                local link, totalCount2, quality, locked
-                if C_Container and C_Container.GetContainerItemInfo then
-                    local apiInfo = C_Container.GetContainerItemInfo(bag, slot)
-                    if apiInfo then
-                        link = apiInfo.hyperlink
-                        totalCount2 = apiInfo.stackCount or 1
-                        quality = apiInfo.quality
-                        locked = apiInfo.isLocked
-                    end
-                elseif GetContainerItemInfo then
-                    local _, itemCountEntry, hasLocked, itemQuality, _, _, itemLink = GetContainerItemInfo(bag, slot)
-                    link = itemLink
-                    totalCount2 = itemCountEntry or 1
-                    quality = itemQuality
-                    locked = hasLocked
-                end
-                if link and not locked then
-                    local _, _, priorityQueue, _, _, _, _, _, _, _, sellPrice = GetItemInfo(link)
-                    quality = quality or priorityQueue
-                    if quality == 0 and sellPrice and sellPrice > 0 then
-                        if C_Container and C_Container.UseContainerItem then
-                            pcall(C_Container.UseContainerItem, bag, slot)
-                        elseif UseContainerItem then
-                            pcall(UseContainerItem, bag, slot)
-                        end
-                        soldCount = soldCount + (totalCount2 or 1)
-                        soldCopper = soldCopper + (sellPrice * (totalCount2 or 1))
-                    end
-                end
-            end
-        end
-        if soldCount > 0 and soldCopper > 0 then
-            print("|cffAEE26AEzWoW - Tooltip:|r " .. format(resolveExtraLocaleText("autoSellDone"), soldCount, addon.FormatCopperAsCoinIcons(soldCopper) or tostring(soldCopper)))
-        end
+        AuctionPriceScanner.sellJunkInBatches()
     end
 
     if not iCfg or iCfg.autoRepair ~= false then
