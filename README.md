@@ -174,3 +174,13 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 
 - Auto-sell and auto-repair are on by default; turn them off in settings if you do not want them.
 - The dropdown skin option takes effect after `/reload`.
+
+---
+
+## Support / 후원
+
+If you find this addon useful, you can support its development.
+
+애드온이 도움이 되셨다면 개발 후원으로 응원해 주세요.
+
+[Buy Me a Coffee ☕](https://buymeacoffee.com/qqhrqqhr2)
