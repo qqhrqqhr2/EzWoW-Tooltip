@@ -1,0 +1,50 @@
+## Interface: 16001
+## Title: EzWoW - Tooltip
+## Title-enUS: EzWoW - Tooltip
+## Title-koKR: EzWoW - Tooltip
+## Title-deDE: EzWoW - Tooltip
+## Title-frFR: EzWoW - Tooltip
+## Title-esES: EzWoW - Tooltip
+## Title-esMX: EzWoW - Tooltip
+## Title-ruRU: EzWoW - Tooltip
+## Title-zhCN: EzWoW - Tooltip
+## Title-zhTW: EzWoW - Tooltip
+## Notes: Clean EzWoW Style tooltips for characters, NPCs, items, and spells (/ezt, /eztooltip, /툴팁)
+## Notes-enUS: Clean EzWoW Style tooltips for characters, NPCs, items, and spells (/ezt, /eztooltip, /툴팁)
+## Notes-koKR: 캐릭터·NPC·아이템·주문·퀘스트 툴팁 꾸미기 및 확장 정보 표시 (/ezt, /eztooltip, /툴팁)
+## Notes-deDE: Übersichtliche Tooltips für Charakter, NSC, Gegenstände und Zauber (/ezt, /eztooltip, /툴팁)
+## Notes-frFR: Infobulles claires pour personnages, PNJ, objets et sorts (/ezt, /eztooltip, /툴팁)
+## Notes-esES: Descripciones emergentes claras para personajes, PNJ, objetos y hechizos (/ezt, /eztooltip, /툴팁)
+## Notes-esMX: Descripciones emergentes claras para personajes, PNJ, objetos y hechizos (/ezt, /eztooltip, /툴팁)
+## Notes-ruRU: Удобные подсказки для персонажей, НИП, предметов и заклинаний (/ezt, /eztooltip, /툴팁)
+## Notes-zhCN: 角色、NPC、物品与法术鼠标提示美化与信息扩展 (/ezt, /eztooltip, /툴팁)
+## Notes-zhTW: 角色、NPC、物品與法術滑鼠提示美化與資訊擴充 (/ezt, /eztooltip, /툴팁)
+## Author: qqhrqqhr2
+## Version: 1.0.0
+## X-License: GPL-3.0
+## X-Website: https://github.com/qqhrqqhr2/EzWoW-Tooltip
+## IconTexture: Interface\AddOns\EzWoW-Tooltip\Media\Icon
+## SavedVariables: EzWoW_TooltipDB
+## SavedVariablesPerCharacter: EzWoW_TooltipPerCharDB
+## OptionalDeps: Blizzard_PTRFeedback
+
+Core\Platform.lua
+Core\UIKit.lua
+Core\EventBus.lua
+Core\Base.lua
+Data\Defaults.lua
+Core\Init.lua
+Core\Locales.lua
+Modules\CardStyle.lua
+Modules\AnchorPosition.lua
+Modules\UnitInfo.lua
+Modules\ModelPreview.lua
+Modules\LinksAndIDs.lua
+Modules\TalentInspector.lua
+Data\SourceDB.lua
+Modules\SourceAndCollection.lua
+Modules\UnitTacticalExtras.lua
+Modules\ItemAndQuestExtras.lua
+Modules\AuraCasterAndPTR.lua
+Modules\AuctionAndMerchant.lua
+UI\OptionsWindow.lua
