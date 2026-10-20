@@ -49,4 +49,5 @@ Modules\UnitTacticalExtras.lua
 Modules\ItemAndQuestExtras.lua
 Modules\AuraCasterAndPTR.lua
 Modules\AuctionAndMerchant.lua
+Modules\ChatLinkHover.lua
 UI\OptionsWindow.lua

@@ -94,6 +94,7 @@ addon.db = {
         showDualName         = true,
         autoSellJunk         = true,
         autoRepair           = true,
+        chatLinkHover        = true,
     },
 
     spell = {

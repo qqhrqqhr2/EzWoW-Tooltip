@@ -109,6 +109,7 @@ local L_EN = {
     showDualName    = "Show Korean/English dual names",
     autoSellJunk    = "Auto-sell grey junk at merchant",
     autoRepair      = "Auto-repair all gear at merchant",
+    chatLinkHover   = "Show tooltip when hovering chat links",
     reset           = "Reset Defaults",
     resetDone       = "Settings restored to defaults.",
     donate          = "Support · Copy Link",
@@ -187,6 +188,7 @@ local LOCALES = {
         showDualName    = "한글 · 영문 이름 병기 표시",
         autoSellJunk    = "상점 방문 시 회색 잡템 자동 판매",
         autoRepair      = "상점 방문 시 모든 장비 자동 수리",
+        chatLinkHover   = "채팅창 링크에 마우스를 올리면 툴팁 표시",
         reset           = "기본값 복원",
         resetDone       = "설정을 기본값으로 복원했습니다.",
         donate          = "후원하기 · 링크 복사",
@@ -262,6 +264,7 @@ local LOCALES = {
         showDualName    = "Zweisprachige Namen anzeigen",
         autoSellJunk    = "Grauen Schrott automatisch verkaufen",
         autoRepair      = "Ausrüstung automatisch reparieren",
+        chatLinkHover   = "Tooltip beim Überfahren von Chat-Links",
         reset           = "Standardwerte",
         resetDone       = "Einstellungen zurückgesetzt.",
         donate          = "Unterstützen · Link",
@@ -336,6 +339,7 @@ local LOCALES = {
         showDualName    = "Afficher les noms bilingues",
         autoSellJunk    = "Vendre auto. les objets gris",
         autoRepair      = "Réparer auto. l'équipement",
+        chatLinkHover   = "Infobulle au survol des liens du chat",
         reset           = "Réinitialiser",
         resetDone       = "Paramètres par défaut restaurés.",
         donate          = "Soutenir · Copier lien",
@@ -410,6 +414,7 @@ local LOCALES = {
         showDualName    = "Mostrar nombres bilingües",
         autoSellJunk    = "Vender objetos grises automáticamente",
         autoRepair      = "Reparar equipo automáticamente",
+        chatLinkHover   = "Mostrar tooltip al pasar sobre enlaces del chat",
         reset           = "Restablecer",
         resetDone       = "Ajustes restablecidos por defecto.",
         donate          = "Apoyar · Copiar enlace",
@@ -484,6 +489,7 @@ local LOCALES = {
         showDualName    = "Двуязычные названия (КО/АНГ)",
         autoSellJunk    = "Автопродажа серого хлама",
         autoRepair      = "Авторемонт всей экипировки",
+        chatLinkHover   = "Подсказка при наведении на ссылки в чате",
         reset           = "Сбросить",
         resetDone       = "Настройки сброшены по умолчанию.",
         donate          = "Поддержать · Ссылка",
@@ -558,6 +564,7 @@ local LOCALES = {
         showDualName    = "同时显示韩文与英文名称",
         autoSellJunk    = "访问商人时自动出售灰色垃圾",
         autoRepair      = "访问商人时自动修理所有装备",
+        chatLinkHover   = "鼠标指向聊天链接时显示提示",
         reset           = "恢复默认",
         resetDone       = "已恢复默认设置。",
         donate          = "赞助支持 · 复制链接",
@@ -632,6 +639,7 @@ local LOCALES = {
         showDualName    = "同時顯示韓文與英文名稱",
         autoSellJunk    = "造訪商人時自動出售灰色垃圾",
         autoRepair      = "造訪商人時自動修理所有裝備",
+        chatLinkHover   = "滑鼠指向聊天連結時顯示提示",
         reset           = "恢復預設",
         resetDone       = "已恢復預設設定。",
         donate          = "贊助支持 · 複製連結",
@@ -682,6 +690,7 @@ local OPTION_TIPS_KO = {
     showDualName    = "아이템, 주문, 퀘스트, NPC 툴팁의 제목과 획득처·재료 목록에 한글 이름과 영문 이름을 함께 표시합니다.",
     autoSellJunk    = "상점 창을 열었을 때 가방에 있는 회색(하급) 잡템을 자동으로 판매하고 획득 금액을 안내합니다. (Shift를 누른 채 상점을 열면 건너뜀)",
     autoRepair      = "수리 가능한 상인을 열었을 때 착용 및 가방의 모든 장비를 자동으로 수리합니다. (Shift를 누른 채 상점을 열면 건너뜀)",
+    chatLinkHover   = "채팅창에 올라온 아이템·주문·퀘스트·업적 링크에 마우스를 올리기만 해도 툴팁을 보여 줍니다. 클릭하지 않아도 됩니다.",
 }
 
 local OPTION_TIPS_EN = {
@@ -720,6 +729,7 @@ local OPTION_TIPS_EN = {
     showDualName    = "Displays both Korean and English names side-by-side on item, spell, quest, and NPC tooltips.",
     autoSellJunk    = "Automatically sells all poor-quality (grey) items in your bags when visiting a merchant (hold Shift while opening to skip).",
     autoRepair      = "Automatically repairs all damaged equipment when visiting a repair-capable merchant (hold Shift while opening to skip).",
+    chatLinkHover   = "Shows the tooltip for item, spell, quest, and achievement links in chat as soon as you hover them, without clicking.",
 }
 
 function SettingsDialog.resolveCurrentLangCode()
@@ -1567,6 +1577,9 @@ function SettingsDialog.launchConfigWindow()
     createStyledCheckbox(286, -522, 228, "autoRepair",
         function() return addon.db.item.autoRepair ~= false end,
         function(entryValue) addon.db.item.autoRepair = entryValue end)
+    createStyledCheckbox(552, -522, 228, "chatLinkHover",
+        function() return addon.db.item.chatLinkHover ~= false end,
+        function(entryValue) addon.db.item.chatLinkHover = entryValue end)
 
     local resetBtn, resetText = createStyledButton(195, -564, 210, 30, false, function()
         SettingsDialog.resetAllToDefaults()
