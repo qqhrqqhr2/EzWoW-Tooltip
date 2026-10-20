@@ -1,4 +1,5 @@
 ## Interface: 16001
+## X-Curse-Project-ID: 1755570
 ## Title: EzWoW - Tooltip
 ## Title-enUS: EzWoW - Tooltip
 ## Title-koKR: EzWoW - Tooltip
