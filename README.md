@@ -1,5 +1,10 @@
 # EzWoW - Tooltip (`EzWoW-Tooltip`)
 
+## CurseForge
+
+- **Project ID / 프로젝트 ID:** `1755570`
+- **Project page / 프로젝트 페이지:** [EzWoW-Tooltip](https://www.curseforge.com/wow/addons/ezwow-tooltip)
+
 **[한국어](#한국어) · [English](#english)**
 
 WoW Forever (`Interface: 16001`) · `/ezt`
