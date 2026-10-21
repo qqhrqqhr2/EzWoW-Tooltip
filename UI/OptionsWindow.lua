@@ -1238,7 +1238,8 @@ function SettingsDialog.launchConfigWindow()
         themeColor:SetScript("OnEnter", function(self)
             resolvedValue:SetTextColor(unpack(Theme.accent))
             local hasKo = (SettingsDialog.resolveCurrentLangCode() == "koKR")
-            local tipDesc = (hasKo and OPTION_TIPS_KO[localeKey]) or OPTION_TIPS_EN[localeKey]
+            local otherLocale = addon.EXTRA_LOCALE and addon.EXTRA_LOCALE[SettingsDialog.resolveCurrentLangCode()]
+            local tipDesc = (hasKo and OPTION_TIPS_KO[localeKey]) or (otherLocale and otherLocale["tip_" .. localeKey]) or OPTION_TIPS_EN[localeKey]
             if tipDesc then
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                 GameTooltip:ClearLines()

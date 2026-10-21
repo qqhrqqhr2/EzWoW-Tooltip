@@ -346,10 +346,12 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
             local lastScan = EzWoW_TooltipDB and tonumber(EzWoW_TooltipDB.auctionLastScan)
             local hasKo = (resolveActiveLocale() == "koKR")
             if lastScan and lastScan > 0 then
-                local noListingTxt = hasKo and "|cff8398A6등록된 매물 없음|r" or "|cff8398A6No active listings|r"
+                local extraNo = addon.EXTRA_LOCALE and addon.EXTRA_LOCALE[resolveActiveLocale()]
+                local noListingTxt = hasKo and "|cff8398A6등록된 매물 없음|r" or ("|cff8398A6" .. ((extraNo and extraNo.ahNoListing) or "No active listings") .. "|r")
                 tip:AddLine(format("%s|cffA7B9C5%s:|r %s%s", ITEM_TAGS.AH_PRICE, resolveExtraLocaleText("auctionPrice"), noListingTxt, ItemQuestEnricher.composeRelativeAge(lastScan)))
             else
-                local needScanTxt = hasKo and "|cff8398A6미수집 (경매장 방문 시 자동 수집)|r" or "|cff8398A6Not scanned yet (open AH to collect)|r"
+                local extraScan = addon.EXTRA_LOCALE and addon.EXTRA_LOCALE[resolveActiveLocale()]
+                local needScanTxt = hasKo and "|cff8398A6미수집 (경매장 방문 시 자동 수집)|r" or ("|cff8398A6" .. ((extraScan and extraScan.ahNotScanned) or "Not scanned yet (open AH to collect)") .. "|r")
                 tip:AddLine(format("%s|cffA7B9C5%s:|r %s", ITEM_TAGS.AH_PRICE, resolveExtraLocaleText("auctionPrice"), needScanTxt))
             end
         end

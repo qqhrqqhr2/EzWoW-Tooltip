@@ -846,7 +846,7 @@ function DropSourceInspector.composeSingleSourceRecord(recordItem)
     elseif kind == "FS" then
         local locName = DropSourceInspector.determineLocationName(locID) or resolveExtraLocaleText("srcFishing")
         local hasKo = (resolveActiveLocale() == "koKR")
-        local skillTxt = (subID > 0) and (hasKo and format("숙련 %d", subID) or format("Skill %d", subID)) or nil
+        local skillTxt = (subID > 0) and (hasKo and format("숙련 %d", subID) or format((addon.EXTRA_LOCALE and addon.EXTRA_LOCALE[resolveActiveLocale()] and addon.EXTRA_LOCALE[resolveActiveLocale()].srcSkillFmt) or "Skill %d", subID)) or nil
         local rateTxt = (coordStr and coordStr ~= "") and coordStr or nil
         local meta = (rateTxt and skillTxt) and (rateTxt .. " · " .. skillTxt) or (rateTxt or skillTxt)
         local metaStr = meta and format(" |cff8398A6(%s)|r", meta) or ""
@@ -1063,7 +1063,7 @@ function DropSourceInspector.composeItemSources(itemID, itemLink)
                 local locName = DropSourceInspector.determineLocationName(locID)
                 if locName then
                     if not primaryLocKey and locID > 0 then primaryLocKey = locID end
-                    local skillTxt = (subID > 0) and (hasKo and format("숙련 %d", subID) or format("Skill %d", subID)) or nil
+                    local skillTxt = (subID > 0) and (hasKo and format("숙련 %d", subID) or format((addon.EXTRA_LOCALE and addon.EXTRA_LOCALE[resolveActiveLocale()] and addon.EXTRA_LOCALE[resolveActiveLocale()].srcSkillFmt) or "Skill %d", subID)) or nil
                     local rateTxt = (coordStr and coordStr ~= "") and coordStr or nil
                     local meta = (rateTxt and skillTxt) and (rateTxt .. " · " .. skillTxt) or (rateTxt or skillTxt)
                     fsParts[#fsParts + 1] = format("|cffEDF4F7%s|r%s", locName, meta and format(" |cff8398A6(%s)|r", meta) or "")
