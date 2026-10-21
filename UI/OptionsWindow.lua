@@ -654,6 +654,14 @@ local LOCALES = {
     }, { __index = L_EN }),
 }
 
+-- Static-tooltip placement instructions.
+LOCALES.deDE.staticBoxHint = "Dieses Feld ziehen, um den festen Tooltip zu platzieren. Eine Ecke anklicken, um die Wachstumsrichtung festzulegen."
+LOCALES.frFR.staticBoxHint = "Faites glisser ce cadre pour placer l'infobulle fixe. Cliquez sur un coin pour choisir son point d'ancrage."
+LOCALES.esES.staticBoxHint = "Arrastra este cuadro para colocar la descripción fija. Haz clic en una esquina para fijar su anclaje."
+LOCALES.ruRU.staticBoxHint = "Перетащите эту рамку, чтобы разместить неподвижную подсказку. Нажмите на угол, чтобы выбрать точку привязки."
+LOCALES.zhCN.staticBoxHint = "拖动此框以设置固定提示的位置。点击角落以设置展开锚点。"
+LOCALES.zhTW.staticBoxHint = "拖曳此框以設定固定提示的位置。點擊角落以設定展開錨點。"
+
 local OPTION_TIPS_KO = {
     mask            = "툴팁 상단에 은은한 밝기 그라데이션(광택) 효과를 표시합니다.",
     fadeOut         = "마우스를 떼었을 때 툴팁이 즉시 닫히지 않고 부드럽게 서서히 사라집니다.",
