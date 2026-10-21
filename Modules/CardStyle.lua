@@ -224,14 +224,27 @@ bus:attachTrigger("tooltip.style.border.color", function(_, tip, r, g, b, a)
 end)
 
 local fontDefaults = {}
+local committedFace = {}   -- face this addon last set on each object
 function CardThemeRenderer.commitFont(object, face, size, flag)
     if not object or not object.GetFont then return end
+    local allDefault = face == "default" and size == "default" and flag == "default"
+    -- untouched and nothing customised: leave the font alone so font addons
+    -- (e.g. EzWoW Font Changer) keep the face they set
+    if allDefault and not fontDefaults[object] then return end
     if not fontDefaults[object] then fontDefaults[object] = { object:GetFont() } end
     local base = fontDefaults[object]
-    local newFace = (face ~= "default" and _G[face] and _G[face].GetFont and (_G[face]:GetFont())) or base[1]
+    local currentFace = object:GetFont()
+    local defaultFace = base[1]
+    if currentFace and currentFace ~= committedFace[object] then
+        defaultFace = currentFace   -- someone else changed the face since: respect it
+    end
+    local newFace = (face ~= "default" and _G[face] and _G[face].GetFont and (_G[face]:GetFont())) or defaultFace
     local newSize = (size ~= "default" and tonumber(size)) or base[2]
     local newFlag = (flag ~= "default" and platformHelper.FontFlag(flag)) or base[3]
-    if newFace and newSize then object:SetFont(newFace, newSize, newFlag or "") end
+    if newFace and newSize then
+        object:SetFont(newFace, newSize, newFlag or "")
+        committedFace[object] = object:GetFont()
+    end
 end
 
 bus:attachTrigger("tooltip.style.font.header", function(_, _, face, size, flag)
