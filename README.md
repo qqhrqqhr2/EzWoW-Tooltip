@@ -51,7 +51,7 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 
 | 번호 | 항목 | 기본값 |
 |---|---|---|
-| ① | 언어 (좌/우클릭 순환) · 테두리(직각/기본) | 자동 · 직각 |
+| ① | 언어 (상자를 누르고 목록에서 고름) · 테두리(직각/기본) | 자동 · 직각 |
 | ② | 툴팁 크기 50~200% · 배경 투명도 10~100% | 100% · 92% |
 | ② | 툴팁 상단 광택 효과 · 서서히 사라지기 | 켬 · 끔 |
 | ② | 드롭다운 · 부가 메뉴 스킨 적용 (/reload 필요) · 캐릭터별 설정 따로 저장 | 켬 · 끔 |
@@ -134,7 +134,7 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 
 | No. | Option | Default |
 |---|---|---|
-| ① | Language (left/right click cycles) · Border (Angular/Default) | Auto · Angular |
+| ① | Language (click the box, pick from the list) · Border (Angular/Default) | Auto · Angular |
 | ② | Scale 50–200% · Opacity 10–100% | 100% · 92% |
 | ② | Top glossy highlight · Fade out smoothly | On · Off |
 | ② | Skin dropdown & extra menus (needs /reload) · Save settings per character | On · Off |

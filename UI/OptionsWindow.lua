@@ -1031,10 +1031,12 @@ function SettingsDialog.fitFontStringToWidth(fs, text, maxWidth, baseSize, minSi
     if fs:GetStringWidth() > maxWidth then
         local orig = text
         while #text > 0 and fs:GetStringWidth() > maxWidth do
-            text = text:sub(1, -2)
-            while #text > 0 and string.byte(text, #text) >= 128 and string.byte(text, #text) < 192 do
-                text = text:sub(1, -2)
+            -- drop the whole last character (all bytes of a Korean / Chinese letter)
+            local cut = #text
+            while cut > 1 and string.byte(text, cut) >= 128 and string.byte(text, cut) < 192 do
+                cut = cut - 1
             end
+            text = text:sub(1, cut - 1)
             fs:SetText(text .. "...")
             if text == orig then break end
         end
@@ -1309,21 +1311,23 @@ function SettingsDialog.launchConfigWindow()
 
     
     
-    local langBtn, langText = createStyledButton(20, -66, 185, 27, false, function(_, button)
-        local currentState = addon.db.general.language or "auto"
-        local entryIndex = 1
-        for index, entryValue in ipairs(LANG_OPTIONS) do
-            if entryValue[1] == currentState then entryIndex = index; break end
-        end
-        if button == "RightButton" then
-            entryIndex = (entryIndex - 2) % #LANG_OPTIONS + 1
-        else
-            entryIndex = entryIndex % #LANG_OPTIONS + 1
-        end
-        addon.db.general.language = LANG_OPTIONS[entryIndex][1]
-        SettingsDialog.syncTooltipLocale()
-        refreshLabels()
-    end)
+    local langBtn, langText = createStyledButton(20, -66, 185, 27, false, nil)
+    -- click the box, then pick a language from the list
+    local langItems = {}
+    for index, entryValue in ipairs(LANG_OPTIONS) do
+        langItems[index] = { value = entryValue[1], text = entryValue[1] == "auto"
+            and function() return SettingsDialog.resolveOptionsLocaleText("langAuto") end or entryValue[2] }
+    end
+    ns.LanguageDropdown.Attach(langBtn, {
+        items = langItems,
+        colors = { bg = Theme.bg, border = Theme.border, accent = Theme.accent, text = Theme.text },
+        get = function() return addon.db.general.language or "auto" end,
+        set = function(code)
+            addon.db.general.language = code
+            SettingsDialog.syncTooltipLocale()
+            refreshLabels()
+        end,
+    })
 
     local borderBtn, borderText = createStyledButton(215, -66, 185, 27, false, function()
         local greenVal = addon.db.general
