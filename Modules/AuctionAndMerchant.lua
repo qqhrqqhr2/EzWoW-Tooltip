@@ -77,6 +77,7 @@ function AuctionPriceScanner.refreshAhButtonLabel()
         else
             actionBtn.label:SetText(resolveExtraLocaleText("ahScanBtn"))
         end
+        ns.UIKit:FitFontString(actionBtn.label, 156, 1)
     end
     if _G.EzWoWTooltipConfig and _G.EzWoWTooltipConfig:IsShown() and _G.EzWoWTooltipConfig.updateLabels then
         _G.EzWoWTooltipConfig.updateLabels()

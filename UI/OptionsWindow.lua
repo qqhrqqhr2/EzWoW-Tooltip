@@ -994,17 +994,31 @@ end
 function SettingsDialog.fitFontStringToWidth(fs, text, maxWidth, baseSize, minSize)
     if not fs then return end
     if fs.SetWordWrap then fs:SetWordWrap(false) end
-    local font, _, flags = fs:GetFont()
-    if not font then
+    if fs.SetTextScale then
+        -- scaling keeps the font object, so font addons still apply
+        fs:SetTextScale(1)
         fs:SetText(text)
-        return
-    end
-    fs:SetFont(font, baseSize, flags)
-    fs:SetText(text)
-    local size = baseSize
-    while fs:GetStringWidth() > maxWidth and size > minSize do
-        size = size - 0.5
-        fs:SetFont(font, size, flags)
+        local _, objectSize = fs:GetFont()
+        if not objectSize or objectSize <= 0 then return end
+        local size = baseSize
+        fs:SetTextScale(size / objectSize)
+        while fs:GetStringWidth() > maxWidth and size > minSize do
+            size = size - 0.5
+            fs:SetTextScale(size / objectSize)
+        end
+    else
+        local font, _, flags = fs:GetFont()
+        if not font then
+            fs:SetText(text)
+            return
+        end
+        fs:SetFont(font, baseSize, flags)
+        fs:SetText(text)
+        local size = baseSize
+        while fs:GetStringWidth() > maxWidth and size > minSize do
+            size = size - 0.5
+            fs:SetFont(font, size, flags)
+        end
     end
     if fs:GetStringWidth() > maxWidth then
         local orig = text
@@ -1792,6 +1806,7 @@ function SettingsDialog.registerBlizzardOptions()
     BlizzardOptionsCanvas.updateText = function()
         desc:SetText(SettingsDialog.resolveOptionsLocaleText("panelDesc"))
         launchBtn.label:SetText(SettingsDialog.resolveOptionsLocaleText("panelOpen"))
+        ns.UIKit:FitFontString(launchBtn.label, 212, 1)
         hint:SetText(SettingsDialog.resolveOptionsLocaleText("panelHint"))
     end
     BlizzardOptionsCanvas:SetScript("OnShow", BlizzardOptionsCanvas.updateText)
