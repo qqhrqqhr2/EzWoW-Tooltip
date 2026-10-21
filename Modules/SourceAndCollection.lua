@@ -297,18 +297,10 @@ function DropSourceInspector.determineLocationName(locID)
     if not locID or locID == 0 then return nil end
     if mapNameCache[locID] then return mapNameCache[locID] end
 
-    local displayName
+    local displayName, databaseFallback
     if locID < 0 then
         local instID = -locID
         local instEntry = addon.InstanceMapDB and addon.InstanceMapDB[instID]
-        local userPref = resolveActiveLocale()
-        if instEntry then
-            if userPref == "koKR" and instEntry[3] and instEntry[3] ~= "" then
-                displayName = instEntry[3]
-            elseif userPref ~= "koKR" and instEntry[4] and instEntry[4] ~= "" then
-                displayName = instEntry[4]
-            end
-        end
         if not displayName and EJ_GetInstanceInfo then
             local isCallOk, nodeEntry = pcall(EJ_GetInstanceInfo, instID)
             if isCallOk and nodeEntry and nodeEntry ~= "" then displayName = nosecret(nodeEntry) end
@@ -328,7 +320,8 @@ function DropSourceInspector.determineLocationName(locID)
                 end
             end
             if not displayName then
-                displayName = (koName and koName ~= "" and koName) or (enName and enName ~= "" and enName) or nil
+                local knownName = resolveActiveLocale() == "koKR" and koName or enName
+                databaseFallback = (knownName and knownName ~= "" and knownName) or nil
             end
         end
     else
@@ -350,7 +343,7 @@ function DropSourceInspector.determineLocationName(locID)
         mapNameCache[locID] = displayName
         return displayName
     end
-    return nil
+    return databaseFallback
 end
 
 function DropSourceInspector.hasValidResolvedName(text)
@@ -365,15 +358,6 @@ function DropSourceInspector.determineNpcName(npcID)
     npcID = tonumber(npcID)
     if not npcID or npcID <= 0 then return nil end
     if npcNameCache[npcID] then return npcNameCache[npcID] end
-
-    local userPref = resolveActiveLocale()
-    if userPref == "koKR" and addon.NpcNameDB_koKR and addon.NpcNameDB_koKR[npcID] then
-        npcNameCache[npcID] = addon.NpcNameDB_koKR[npcID]
-        return npcNameCache[npcID]
-    elseif userPref ~= "koKR" and addon.NpcNameDB_enUS and addon.NpcNameDB_enUS[npcID] then
-        npcNameCache[npcID] = addon.NpcNameDB_enUS[npcID]
-        return npcNameCache[npcID]
-    end
 
     local unitLink = format("unit:Creature-0-0-0-0-%d-0000000000", npcID)
     if C_TooltipInfo and C_TooltipInfo.GetHyperlink then
@@ -404,7 +388,7 @@ function DropSourceInspector.determineNpcName(npcID)
         end
     end
 
-    if addon.NpcNameDB_koKR and addon.NpcNameDB_koKR[npcID] then
+    if resolveActiveLocale() == "koKR" and addon.NpcNameDB_koKR and addon.NpcNameDB_koKR[npcID] then
         return addon.NpcNameDB_koKR[npcID]
     end
     if addon.NpcNameDB_enUS and addon.NpcNameDB_enUS[npcID] then
@@ -434,15 +418,6 @@ function DropSourceInspector.determineQuestName(questID)
     if not questID or questID <= 0 then return nil end
     if questNameCache[questID] then return questNameCache[questID] end
 
-    local userPref = resolveActiveLocale()
-    if userPref == "koKR" and addon.QuestNameDB_koKR and addon.QuestNameDB_koKR[questID] then
-        questNameCache[questID] = addon.QuestNameDB_koKR[questID]
-        return questNameCache[questID]
-    elseif userPref ~= "koKR" and addon.QuestNameDB_enUS and addon.QuestNameDB_enUS[questID] then
-        questNameCache[questID] = addon.QuestNameDB_enUS[questID]
-        return questNameCache[questID]
-    end
-
     local titleStr
     if C_QuestLog and C_QuestLog.GetTitleForQuestID then
         local isCallOk, resolvedValue = pcall(C_QuestLog.GetTitleForQuestID, questID)
@@ -461,26 +436,19 @@ function DropSourceInspector.determineQuestName(questID)
             end
         end
     end
-    if not titleStr then
-        titleStr = (addon.QuestNameDB_koKR and addon.QuestNameDB_koKR[questID])
-            or (addon.QuestNameDB_enUS and addon.QuestNameDB_enUS[questID])
-    end
     if titleStr and titleStr ~= "" then
         questNameCache[questID] = titleStr
         return titleStr
     end
-    return format("#%d", questID)
+    -- Do not cache database fallbacks: the client may load its title later.
+    return (resolveActiveLocale() == "koKR" and addon.QuestNameDB_koKR and addon.QuestNameDB_koKR[questID])
+        or (addon.QuestNameDB_enUS and addon.QuestNameDB_enUS[questID])
+        or format("#%d", questID)
 end
 
 function DropSourceInspector.determineReagentName(itemID)
     itemID = tonumber(itemID)
     if not itemID or itemID <= 0 then return nil end
-    local userPref = resolveActiveLocale()
-    if userPref == "koKR" and addon.ReagentNameDB_koKR and addon.ReagentNameDB_koKR[itemID] then
-        return addon.ReagentNameDB_koKR[itemID]
-    elseif userPref ~= "koKR" and addon.ReagentNameDB_enUS and addon.ReagentNameDB_enUS[itemID] then
-        return addon.ReagentNameDB_enUS[itemID]
-    end
     if compat.GetItemInfo then
         local isCallOk, iName = pcall(compat.GetItemInfo, itemID)
         if isCallOk and iName and iName ~= "" then return nosecret(iName) end
@@ -488,7 +456,7 @@ function DropSourceInspector.determineReagentName(itemID)
     if C_Item and C_Item.RequestLoadItemDataByID then
         pcall(C_Item.RequestLoadItemDataByID, itemID)
     end
-    return (addon.ReagentNameDB_koKR and addon.ReagentNameDB_koKR[itemID])
+    return (resolveActiveLocale() == "koKR" and addon.ReagentNameDB_koKR and addon.ReagentNameDB_koKR[itemID])
         or (addon.ReagentNameDB_enUS and addon.ReagentNameDB_enUS[itemID])
         or format("#%d", itemID)
 end
