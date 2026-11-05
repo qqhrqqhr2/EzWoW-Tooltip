@@ -93,18 +93,54 @@ function CardThemeRenderer.layoutCard(tip, cardLayout)
     edges.left:ClearAllPoints();   edges.left:SetPoint("TOPLEFT", tip, "TOPLEFT");        edges.left:SetPoint("BOTTOMLEFT", tip, "BOTTOMLEFT");   edges.left:SetWidth(recordEntry)
     edges.right:ClearAllPoints();  edges.right:SetPoint("TOPRIGHT", tip, "TOPRIGHT");     edges.right:SetPoint("BOTTOMRIGHT", tip, "BOTTOMRIGHT"); edges.right:SetWidth(recordEntry)
 
-    cardLayout.band:ClearAllPoints()
-    cardLayout.band:SetPoint("TOPLEFT", tip, "TOPLEFT", recordEntry, -recordEntry)
-    cardLayout.band:SetPoint("BOTTOMRIGHT", tip, "TOPRIGHT", -recordEntry, -HEADER_HEIGHT)
-    cardLayout.bandRule:ClearAllPoints()
-    cardLayout.bandRule:SetPoint("TOPLEFT", tip, "TOPLEFT", 6, -HEADER_HEIGHT)
-    cardLayout.bandRule:SetPoint("TOPRIGHT", tip, "TOPRIGHT", -6, -HEADER_HEIGHT)
-    cardLayout.gloss:ClearAllPoints()
-    cardLayout.gloss:SetPoint("TOPLEFT", tip, "TOPLEFT", recordEntry, -recordEntry)
-    cardLayout.gloss:SetPoint("BOTTOMRIGHT", tip, "TOPRIGHT", -recordEntry, -HEADER_HEIGHT)
+    CardThemeRenderer.anchorBand(tip, cardLayout)
     cardLayout.topBar:ClearAllPoints()
     cardLayout.topBar:SetPoint("TOPLEFT", tip, "TOPLEFT", recordEntry, -recordEntry)
     cardLayout.topBar:SetPoint("TOPRIGHT", tip, "TOPRIGHT", -recordEntry, -recordEntry)
+end
+
+-- Header band (band + gloss + accent rule). Only our own textures are anchored here;
+-- the tooltip's text lines are never touched.
+function CardThemeRenderer.anchorBand(tip, cardLayout)
+    local recordEntry = cardLayout.edgeSize
+    local bandHeight = cardLayout.bandHeight or HEADER_HEIGHT
+    cardLayout.band:ClearAllPoints()
+    cardLayout.band:SetPoint("TOPLEFT", tip, "TOPLEFT", recordEntry, -recordEntry)
+    cardLayout.band:SetPoint("BOTTOMRIGHT", tip, "TOPRIGHT", -recordEntry, -bandHeight)
+    cardLayout.bandRule:ClearAllPoints()
+    cardLayout.bandRule:SetPoint("TOPLEFT", tip, "TOPLEFT", 6, -bandHeight)
+    cardLayout.bandRule:SetPoint("TOPRIGHT", tip, "TOPRIGHT", -6, -bandHeight)
+    cardLayout.gloss:ClearAllPoints()
+    cardLayout.gloss:SetPoint("TOPLEFT", tip, "TOPLEFT", recordEntry, -recordEntry)
+    cardLayout.gloss:SetPoint("BOTTOMRIGHT", tip, "TOPRIGHT", -recordEntry, -bandHeight)
+end
+
+local BAND_GAP = 4          -- space between the bottom of line 1 and the accent rule
+local BAND_MAX = 96
+
+-- Height of the header band, measured from the tooltip top to the bottom of line 1.
+-- Returns nil when it can't be measured (the caller then keeps the default height).
+function CardThemeRenderer.measureBand(tip)
+    local tipName = tip.GetName and tip:GetName()
+    local line1 = tip.TextLeft1 or (tipName and _G[tipName .. "TextLeft1"])
+    if not line1 or not line1.GetBottom or not line1:IsShown() then return nil end
+    local isCallOk, top, bottom = pcall(function() return tip:GetTop(), line1:GetBottom() end)
+    if not isCallOk or type(top) ~= "number" or type(bottom) ~= "number" then return nil end
+    if platformHelper.issecret and (platformHelper.issecret(top) or platformHelper.issecret(bottom)) then return nil end
+    local height = math.floor(top - bottom + BAND_GAP + 0.5)
+    if height < HEADER_HEIGHT then height = HEADER_HEIGHT end
+    if height > BAND_MAX then height = BAND_MAX end
+    return height
+end
+
+function CardThemeRenderer.refreshBand(tip)
+    local cardLayout = tip and tip.ezCard
+    if not cardLayout then return end
+    local height = CardThemeRenderer.measureBand(tip) or HEADER_HEIGHT
+    if height ~= cardLayout.bandHeight then
+        cardLayout.bandHeight = height
+        CardThemeRenderer.anchorBand(tip, cardLayout)
+    end
 end
 
 function CardThemeRenderer.paintCard(tip, cardLayout)
@@ -145,7 +181,17 @@ function CardThemeRenderer.skin(tip)
 
     if not bootstrapDone[tip] then
         bootstrapDone[tip] = true
-        tip:HookScript("OnShow", function(self) bus:trigger("tooltip:show", self) end)
+        tip:HookScript("OnShow", function(self)
+            CardThemeRenderer.refreshBand(self)
+            -- line 1 may only get its final size on the next layout pass
+            if C_Timer and C_Timer.After then
+                C_Timer.After(0, function() if self:IsShown() then CardThemeRenderer.refreshBand(self) end end)
+            end
+            bus:trigger("tooltip:show", self)
+        end)
+        if tip:HasScript("OnSizeChanged") then
+            tip:HookScript("OnSizeChanged", function(self) CardThemeRenderer.refreshBand(self) end)
+        end
         tip:HookScript("OnHide", function(self) bus:trigger("tooltip:hide", self) end)
         if tip:HasScript("OnTooltipCleared") then
             tip:HookScript("OnTooltipCleared", function(self) bus:trigger("tooltip:cleared", self) end)

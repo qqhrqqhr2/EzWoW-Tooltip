@@ -401,10 +401,25 @@ EventDispatcher:attachTrigger("tooltip:spell", function(self, tip, spellID)
     end
 end)
 
+-- The item data post-call usually fires inside SetItemByID/SetItemKey already; remember that
+-- per tooltip fill so the hooks below only fire "tooltip:item" when it did not.
+local itemSignalSeen = {}
+local itemSignalTracked = {}   -- tooltips whose fills can be told apart (cleared between fills)
+EventDispatcher:attachTrigger("tooltip:item", function(self, tip)
+    if tip and itemSignalTracked[tip] then itemSignalSeen[tip] = true end
+end)
+
 for _, tipFrame in ipairs({ GameTooltip, ItemRefTooltip }) do
     if tipFrame then
+        if tipFrame.HookScript and tipFrame.HasScript and tipFrame:HasScript("OnTooltipCleared")
+            and _G.TooltipDataProcessor then
+            itemSignalTracked[tipFrame] = true
+            tipFrame:HookScript("OnTooltipCleared", function(self) itemSignalSeen[self] = nil end)
+            tipFrame:HookScript("OnHide", function(self) itemSignalSeen[self] = nil end)
+        end
         if tipFrame.SetItemByID then
             hooksecurefunc(tipFrame, "SetItemByID", function(self, itemID)
+                if itemSignalSeen[self] then return end
                 itemID = tonumber(nosecret(itemID))
                 if itemID and itemID > 0 then
                     EventDispatcher:trigger("tooltip:item", self, "item:" .. tostring(itemID))
@@ -413,6 +428,7 @@ for _, tipFrame in ipairs({ GameTooltip, ItemRefTooltip }) do
         end
         if tipFrame.SetItemKey then
             hooksecurefunc(tipFrame, "SetItemKey", function(self, itemID)
+                if itemSignalSeen[self] then return end
                 itemID = tonumber(nosecret(itemID))
                 if itemID and itemID > 0 then
                     EventDispatcher:trigger("tooltip:item", self, "item:" .. tostring(itemID))

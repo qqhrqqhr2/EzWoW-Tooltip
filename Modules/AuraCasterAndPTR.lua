@@ -716,17 +716,8 @@ function addon:UpdateIssueReportState()
     local BugReportInterceptor = _G["PTR_IssueReporter"]
     if type(BugReportInterceptor) ~= "table" then return end
 
-    if not BugReportInterceptor._eztTooltipHooked and type(BugReportInterceptor.SetCurrentTooltipReport) == "function" then
-        BugReportInterceptor._eztTooltipHooked = true
-        local origSetCurrentTooltipReport = BugReportInterceptor.SetCurrentTooltipReport
-        BugReportInterceptor.SetCurrentTooltipReport = function(...)
-            local registered = origSetCurrentTooltipReport(...)
-            if AuraCasterTracker.shouldHideIssueReport() then
-                return false
-            end
-            return registered
-        end
-    end
+    -- The reporter's own functions are left untouched (replacing them would spread taint);
+    -- its tooltip line is removed afterwards by RemoveDebugTelemetryTooltipLines.
 
     if not BugReportInterceptor._eztShowHooked and type(BugReportInterceptor.Hide) == "function" then
         BugReportInterceptor._eztShowHooked = true
