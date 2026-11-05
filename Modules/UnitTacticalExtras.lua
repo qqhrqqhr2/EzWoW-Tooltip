@@ -109,13 +109,7 @@ function UnitTacticalOverlay.evaluateEquippedIlvlFromSlots(unit)
 end
 
 function UnitTacticalOverlay.tryRequestInspectForTooltip(unit, guid)
-    if not NotifyInspect or not CanInspect or InCombatLockdown() then return end
-    if InspectFrame and InspectFrame:IsShown() then return end
-    if PlayerSpellsFrame and PlayerSpellsFrame.IsInspecting and PlayerSpellsFrame:IsInspecting() then return end
-    local okCan, canInsp = pcall(CanInspect, unit)
-    if not okCan or not nosecret(canInsp) then return end
-    local okConn, hasConn = pcall(UnitIsConnected, unit)
-    if okConn and nosecret(hasConn) == false then return end
+    if not compat.CanRequestInspect(unit) then return end
 
     local currentTime = GetTime()
     if guid == lastInspectReqGUID and (currentTime - lastInspectReqTime) < 15.0 then return end
@@ -128,16 +122,12 @@ function UnitTacticalOverlay.tryRequestInspectForTooltip(unit, guid)
         local targetGuid = guid
         C_Timer.After(0.4, function()
             pendingInspectTimer = false
-            if not GameTooltip:IsShown() or InCombatLockdown() then return end
-            if InspectFrame and InspectFrame:IsShown() then return end
+            if not GameTooltip:IsShown() then return end
             local unitRef = UnitTacticalOverlay.determineUnitByGUID(targetGuid)
-            if unitRef and UnitExists(unitRef) then
-                local okC, canC = pcall(CanInspect, unitRef)
-                if okC and nosecret(canC) then
-                    lastInspectReqTime = GetTime()
-                    lastInspectReqGUID = targetGuid
-                    pcall(NotifyInspect, unitRef)
-                end
+            if unitRef and UnitExists(unitRef) and compat.CanRequestInspect(unitRef) then
+                lastInspectReqTime = GetTime()
+                lastInspectReqGUID = targetGuid
+                pcall(NotifyInspect, unitRef)
             end
         end)
     end
@@ -184,14 +174,14 @@ function UnitTacticalOverlay.extractUnitItemLevel(unit, guid, isInspectReady)
     return cached and cached.ilvl or nil
 end
 
-function addon:FormatPlayerIlvlAndGearScore(unit, ilvlVal)
+function addon:FormatPlayerIlvlAndGearRating(unit, ilvlVal)
     local numIlvl = tonumber(ilvlVal)
     if not numIlvl or numIlvl <= 0 then return nil end
     local pCfg = self.db and self.db.unit and self.db.unit.player
-    local showGS = not pCfg or pCfg.showGearScore ~= false
+    local showGS = not pCfg or pCfg.showGearRating ~= false
     local score = (showGS and unit and self.CalculateUnitAverageItemLevel) and self:CalculateUnitAverageItemLevel(unit) or nil
     if score and score > 0 then
-        local gsHex = (self.GetGearScoreColorHex and self:GetGearScoreColorHex(score)) or "EDF4F7"
+        local gsHex = (self.GetGearRatingColorHex and self:GetGearRatingColorHex(score)) or "EDF4F7"
         return format("%s|cffA7B9C5%s:|r |cffEDF4F7%.1f|r|cff%s(%d)|r", ILVL_PREFIX_TAG, resolveExtraLocaleText("ilvl"), numIlvl, gsHex, score)
     end
     return format("%s|cffA7B9C5%s:|r |cffEDF4F7%.1f|r", ILVL_PREFIX_TAG, resolveExtraLocaleText("ilvl"), numIlvl)
@@ -472,7 +462,7 @@ function UnitTacticalOverlay.refreshUnitExtras(tip, unit, isInspectReady)
         if not pCfg or pCfg.showItemLevel ~= false then
             local ilvl = UnitTacticalOverlay.extractUnitItemLevel(unit, guid, isInspectReady)
             if ilvl then
-                local ilvlLineText = addon:FormatPlayerIlvlAndGearScore(unit, ilvl)
+                local ilvlLineText = addon:FormatPlayerIlvlAndGearRating(unit, ilvl)
                 if ilvlLineText then
                     addon:InsertOrUpdateTooltipLine(tip, ILVL_PATTERN, ilvlLineText)
                 end

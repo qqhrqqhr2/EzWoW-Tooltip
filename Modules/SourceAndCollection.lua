@@ -150,11 +150,11 @@ function addon.SanitizeUnitTooltipTextLines(tip)
                 else
                     local rawNum = tonumber((plainR and plainR:match("(%d+%.?%d*)")) or plainL:match("(%d+%.?%d*)"))
                     if ourIlvlLine and ourIlvlLine ~= left then
-                        -- Keep our own decimal ilvl + (GearScore) line and remove the duplicate native line
+                        -- Keep our own decimal ilvl + (gear rating) line and remove the duplicate native line
                         left:SetText(nil)
                     elseif rawNum and rawNum > 0 then
                         local _, tipUnit = compat.GetTooltipUnit(tip)
-                        local formatted = (addon.FormatPlayerIlvlAndGearScore and addon:FormatPlayerIlvlAndGearScore(tipUnit, rawNum))
+                        local formatted = (addon.FormatPlayerIlvlAndGearRating and addon:FormatPlayerIlvlAndGearRating(tipUnit, rawNum))
                             or format("%s|cffA7B9C5%s:|r |cffEDF4F7%.1f|r", ILVL_PREFIX_TAG, resolveExtraLocaleText("ilvl"), rawNum)
                         left:SetText(formatted)
                         ourIlvlLine = left

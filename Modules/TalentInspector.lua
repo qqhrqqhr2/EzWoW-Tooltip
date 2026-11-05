@@ -756,7 +756,7 @@ function TalentTreeInspector.trySendInspect(guid, attempt)
         return
     end
     pendingGUID = nil
-    if unit and UnitExists(unit) and CanInspect and CanInspect(unit) then
+    if unit and UnitExists(unit) and compat.CanRequestInspect(unit) then
         lastInspectTime = GetTime()
         pcall(NotifyInspect, unit)
     end

@@ -1,6 +1,6 @@
 --===========================================================================
 -- EzWoW - Tooltip
--- Modules/UnitInfo.lua : Unit Name, Guild, Target-of-Target, Role & GearScore Builder
+-- Modules/UnitInfo.lua : Unit Name, Guild, Target-of-Target, Role & Gear Rating Builder
 --===========================================================================
 local _, ns = ...
 
@@ -439,7 +439,7 @@ function UnitProfileFormatter.scoreColor(score)
     return "ff8000"
 end
 
-function addon:GetGearScoreColorHex(score)
+function addon:GetGearRatingColorHex(score)
     return UnitProfileFormatter.scoreColor(tonumber(score) or 0)
 end
 
@@ -447,13 +447,12 @@ local inspectAsked = {}
 function UnitProfileFormatter.refreshGearLine(tip, unit, cfg)
     -- Standalone gear score line is disabled; gear score is displayed inline on the Item Level line: 아이템 레벨: 34.0(414)
     addon:StripMatchingTooltipLine(tip, PAT_GEAR)
-    if not cfg or not cfg.showGearScore then return end
+    if not cfg or not cfg.showGearRating then return end
     local score = addon:CalculateUnitAverageItemLevel(unit)
     if score then return end
     local talentsOff = addon.db.unit.player.showTalent == false
     local guid = nosecret(UnitGUID(unit))
-    if talentsOff and guid and not inspectAsked[guid] and not InCombatLockdown()
-        and _G.CanInspect and _G.CanInspect(unit) and _G.NotifyInspect then
+    if talentsOff and guid and not inspectAsked[guid] and platformHelper.CanRequestInspect(unit) then
         inspectAsked[guid] = true
         pcall(_G.NotifyInspect, unit)
     end

@@ -26,6 +26,15 @@ local activeModelGUID = nil
 local activeBoxWidth = nil
 local inLayoutSync = false
 
+-- Runs a layout step with inLayoutSync set; the flag is always cleared,
+-- even when the step raises an error (the error is still reported).
+local function runLayoutSync(fn, ...)
+    inLayoutSync = true
+    local ok, err = pcall(fn, ...)
+    inLayoutSync = false
+    if not ok and type(geterrorhandler) == "function" then geterrorhandler()(err) end
+end
+
 local function CountVisibleTooltipLines(tipFrame)
     if not tipFrame or not tipFrame.NumLines then return 0 end
     local baseName = tipFrame:GetName()
@@ -146,23 +155,23 @@ function UnitModelPreviewer.layoutPreviewInTooltip(tipFrame)
 
     local padW = targetW + TEXT_GAP_PADDING
 
-    inLayoutSync = true
-    -- 1. Reset lines to standard x=10 first so C++ GameTooltip:Show() computes clean width/height
-    AlignTooltipTextColumn(tipFrame, 10)
-    UnitModelPreviewer.refreshTooltipPadding(tipFrame, padW)
-    if tipFrame:IsShown() then
-        pcall(tipFrame.Show, tipFrame)
-    end
+    runLayoutSync(function()
+        -- 1. Reset lines to standard x=10 first so C++ GameTooltip:Show() computes clean width/height
+        AlignTooltipTextColumn(tipFrame, 10)
+        UnitModelPreviewer.refreshTooltipPadding(tipFrame, padW)
+        if tipFrame:IsShown() then
+            pcall(tipFrame.Show, tipFrame)
+        end
 
-    -- 2. Anchor 3D preview container flush to the far left of the tooltip from top to bottom
-    previewContainer:ClearAllPoints()
-    previewContainer:SetPoint("TOPLEFT", tipFrame, "TOPLEFT", EDGE_INSET_LEFT, -EDGE_INSET_TOP)
-    previewContainer:SetPoint("BOTTOMLEFT", tipFrame, "BOTTOMLEFT", EDGE_INSET_LEFT, EDGE_INSET_BOTTOM)
-    previewContainer:SetWidth(targetW)
+        -- 2. Anchor 3D preview container flush to the far left of the tooltip from top to bottom
+        previewContainer:ClearAllPoints()
+        previewContainer:SetPoint("TOPLEFT", tipFrame, "TOPLEFT", EDGE_INSET_LEFT, -EDGE_INSET_TOP)
+        previewContainer:SetPoint("BOTTOMLEFT", tipFrame, "BOTTOMLEFT", EDGE_INSET_LEFT, EDGE_INSET_BOTTOM)
+        previewContainer:SetWidth(targetW)
 
-    -- 3. Shift all tooltip text lines (1..N) into a single aligned column to the right of the 3D model
-    AlignTooltipTextColumn(tipFrame, EDGE_INSET_LEFT + targetW + TEXT_GAP_PADDING)
-    inLayoutSync = false
+        -- 3. Shift all tooltip text lines (1..N) into a single aligned column to the right of the 3D model
+        AlignTooltipTextColumn(tipFrame, EDGE_INSET_LEFT + targetW + TEXT_GAP_PADDING)
+    end)
 end
 
 function UnitModelPreviewer.dismissPreviewWidget()
@@ -177,10 +186,10 @@ function UnitModelPreviewer.dismissPreviewWidget()
     -- Only undo our own layout; a tooltip we never shifted keeps the client's padding and anchors.
     local tipFrame = activeOwnerTooltip
     if tipFrame then
-        inLayoutSync = true
-        AlignTooltipTextColumn(tipFrame, 10)
-        UnitModelPreviewer.refreshTooltipPadding(tipFrame, 0)
-        inLayoutSync = false
+        runLayoutSync(function()
+            AlignTooltipTextColumn(tipFrame, 10)
+            UnitModelPreviewer.refreshTooltipPadding(tipFrame, 0)
+        end)
     end
     activeOwnerTooltip = nil
 end

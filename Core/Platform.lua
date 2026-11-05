@@ -33,6 +33,30 @@ function PlatformBridge.anysecret(...)
     return false
 end
 
+-- True when an inspect request for this unit is safe to send: not in combat,
+-- no inspect window of the player's own open (a request would replace its
+-- data), and the unit can be inspected (checked without secret values).
+function PlatformBridge.CanRequestInspect(unitToken)
+    if not unitToken or type(_G.NotifyInspect) ~= "function" or type(_G.CanInspect) ~= "function" then
+        return false
+    end
+    if _G.InCombatLockdown and _G.InCombatLockdown() then return false end
+    local inspectFrame = _G.InspectFrame
+    if inspectFrame and inspectFrame.IsShown and inspectFrame:IsShown() then return false end
+    local spellsFrame = _G.PlayerSpellsFrame
+    if spellsFrame and type(spellsFrame.IsInspecting) == "function" then
+        local okInspecting, inspecting = pcall(spellsFrame.IsInspecting, spellsFrame)
+        if okInspecting and PlatformBridge.nosecret(inspecting) then return false end
+    end
+    local okCan, canInspect = pcall(_G.CanInspect, unitToken)
+    if not okCan or not PlatformBridge.nosecret(canInspect) then return false end
+    if type(_G.UnitIsConnected) == "function" then
+        local okConn, connected = pcall(_G.UnitIsConnected, unitToken)
+        if okConn and PlatformBridge.nosecret(connected) == false then return false end
+    end
+    return true
+end
+
 function PlatformBridge.GetMouseFocus()
     if type(_G.GetMouseFocus) == "function" then
         return _G.GetMouseFocus()
