@@ -59,6 +59,23 @@ for _, globalName in ipairs(DEFAULT_TOOLTIP_NAMES) do
     TooltipEngine.TrackTooltip(_G[globalName])
 end
 
+-- Tooltip post-calls fire for every tooltip, including hidden scanning
+-- tooltips that other addons read lines from. Only decorate the tracked UI
+-- tooltips, or other tooltips while they are actually anchored on screen.
+function TooltipEngine.IsDecoratableTooltip(tipFrame)
+    if type(tipFrame) ~= "table" then return false end
+    if tipFrame.IsForbidden and tipFrame:IsForbidden() then return false end
+    for _, existing in ipairs(TooltipEngine.tooltips) do
+        if existing == tipFrame then return true end
+    end
+    local frameName = tipFrame.GetName and PlatformBridge.nosecret(tipFrame:GetName())
+    if type(frameName) == "string" and frameName:lower():find("scan", 1, true) then return false end
+    if type(tipFrame.IsVisible) ~= "function" or not tipFrame:IsVisible() then return false end
+    if type(tipFrame.GetNumPoints) == "function" and tipFrame:GetNumPoints() == 0 then return false end
+    if type(tipFrame.GetLeft) == "function" and not tipFrame:GetLeft() then return false end
+    return true
+end
+
 function TooltipEngine.composeMediaBadge(assetName, iconSize, cropInset)
     local margin = cropInset or 2
     local maxCoord = 64 - margin

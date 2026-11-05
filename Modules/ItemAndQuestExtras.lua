@@ -366,7 +366,7 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
 end)
 
 EventDispatcher:attachTrigger("tooltip:spell", function(self, tip, spellID)
-    spellID = tonumber(nosecret(spellID)) or (tip and tip.GetSpell and tonumber(nosecret(select(2, tip:GetSpell()))))
+    spellID = tonumber(nosecret(spellID)) or (tip and tonumber(nosecret(select(2, compat.GetTooltipSpell(tip)))))
     if not tip then return end
     appendDualNameToTitle(tip, "spell", spellID)
     if not spellID or spellID <= 0 then

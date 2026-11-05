@@ -574,28 +574,51 @@ function AuctionPriceScanner.readJunkSlot(bag, slot)
         locked = hasLocked
     end
     if not link or locked then return nil end
-    local _, _, infoQuality, _, _, _, _, _, _, _, sellPrice = GetItemInfo(link)
+    local _, _, infoQuality, _, _, _, _, _, _, _, sellPrice = compat.GetItemInfo(link)
     quality = quality or infoQuality
     if quality == 0 and sellPrice and sellPrice > 0 then
         return link, stackCount or 1, sellPrice
     end
+    if quality == 0 and sellPrice == nil then
+        -- item data not cached yet: ask the client to load it so a retry can sell it
+        if C_Item and C_Item.RequestLoadItemDataByID then
+            pcall(C_Item.RequestLoadItemDataByID, link)
+        end
+        return nil, nil, nil, true
+    end
 end
 
-function AuctionPriceScanner.sellJunkInBatches()
-    local queue = {}
+function AuctionPriceScanner.sellJunkInBatches(isRetry)
+    local queue, hasUncached = {}, false
     local maxBags = NUM_BAG_SLOTS or 4
     for bag = 0, maxBags do
         local numSlots = (C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerNumSlots(bag))
             or (GetContainerNumSlots and GetContainerNumSlots(bag)) or 0
         for slot = 1, numSlots do
-            local link = AuctionPriceScanner.readJunkSlot(bag, slot)
-            if link then queue[#queue + 1] = { bag = bag, slot = slot, link = link } end
+            local link, _, _, isUncached = AuctionPriceScanner.readJunkSlot(bag, slot)
+            if link then
+                queue[#queue + 1] = { bag = bag, slot = slot, link = link }
+            elseif isUncached then
+                hasUncached = true
+            end
         end
     end
-    if #queue == 0 then return end
+
+    -- junk whose price was not cached yet gets one more pass once the data has loaded
+    local function scheduleRetry()
+        if hasUncached and not isRetry and C_Timer and C_Timer.After then
+            C_Timer.After(1.0, function()
+                if MerchantFrame and MerchantFrame:IsShown() then
+                    AuctionPriceScanner.sellJunkInBatches(true)
+                end
+            end)
+        end
+    end
+    if #queue == 0 then return scheduleRetry() end
 
     local soldCount, soldCopper, cursor = 0, 0, 1
     local function finish()
+        scheduleRetry()
         if soldCount > 0 and soldCopper > 0 then
             print("|cffAEE26AEzWoW - Tooltip:|r " .. format(resolveExtraLocaleText("autoSellDone"), soldCount, addon.FormatCopperAsCoinIcons(soldCopper) or tostring(soldCopper)))
         end

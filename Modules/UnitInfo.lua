@@ -459,8 +459,49 @@ function UnitProfileFormatter.refreshGearLine(tip, unit, cfg)
     end
 end
 
+-- Layout snapshot of one tooltip line region (anchor, position, size) for /ezt debug.
+local function describeRegion(region, tip)
+    if not region then return "-" end
+    local function num(v)
+        v = nosecret(v)
+        return type(v) == "number" and ("%.1f"):format(v) or "?"
+    end
+    local parts = { region:IsShown() and "shown" or "hidden" }
+    for p = 1, (region:GetNumPoints() or 0) do
+        local point, relTo, relPoint, xOfs, yOfs = region:GetPoint(p)
+        local relName = relTo == tip and "TIP" or (relTo and relTo.GetName and relTo:GetName()) or tostring(relTo)
+        parts[#parts + 1] = ("%s>%s.%s(%s,%s)"):format(tostring(point), tostring(relName), tostring(relPoint), num(xOfs), num(yOfs))
+    end
+    local tipTop, tipLeft = tip:GetTop(), tip:GetLeft()
+    local top, left = region:GetTop(), region:GetLeft()
+    if tipTop and top and tipLeft and left then
+        parts[#parts + 1] = ("at(%s,%s)"):format(num(left - tipLeft), num(top - tipTop))
+    end
+    parts[#parts + 1] = ("size(%s x %s)"):format(num(region:GetWidth()), num(region:GetHeight()))
+    return table.concat(parts, " ")
+end
+
 function UnitProfileFormatter.dumpTooltip(tip, caption)
     print(("|cffAEE26AEzWoW - Tooltip|r debug (%s): %d lines"):format(caption, tip:NumLines()))
+    -- Also kept in SavedVariables (EzWoW_TooltipDB.layoutDump) so the layout can be read after /reload.
+    local db = _G.EzWoW_TooltipDB
+    local record
+    if type(db) == "table" then
+        db.layoutDump = type(db.layoutDump) == "table" and db.layoutDump or {}
+        if caption == "game" then wipe(db.layoutDump) end
+        local padOk, padText = false, "?"
+        if tip.GetPadding then
+            padOk, padText = pcall(function()
+                local vals = { tip:GetPadding() }
+                for k, v in ipairs(vals) do vals[k] = tostring(nosecret(v)) end
+                return table.concat(vals, ",")
+            end)
+        end
+        record = { caption = caption, time = date("%H:%M:%S"),
+                   tip = ("size(%.1f x %.1f) padding=%s"):format(nosecret(tip:GetWidth()) or 0, nosecret(tip:GetHeight()) or 0,
+                         padOk and padText or "?") }
+        db.layoutDump[#db.layoutDump + 1] = record
+    end
     for index = 1, tip:NumLines() do
         local left, right = lineRegions(tip, index)
         local function show(v)
@@ -469,6 +510,11 @@ function UnitProfileFormatter.dumpTooltip(tip, caption)
             return (tostring(v):gsub("|", "||"))
         end
         print(("  %d: [%s] [%s]"):format(index, show(left and left:GetText()), show(right and right:GetText())))
+        if record then
+            record[#record + 1] = ("%d L[%s] %s || R[%s] %s"):format(index,
+                show(left and left:GetText()), describeRegion(left, tip),
+                show(right and right:GetText()), describeRegion(right, tip))
+        end
     end
 end
 
@@ -552,10 +598,10 @@ bus:attachTrigger("tooltip:cleared, tooltip:hide", function(_, tip)
     if current.tip == tip then current.tip, current.unit = nil, nil end
 end)
 
-platformHelper.AddTooltipPostCall("Unit", "OnTooltipSetUnit", function(tip)
-    if not tip or not tip.ezCard or (tip.IsForbidden and tip:IsForbidden()) or not tip.GetUnit then return end
+platformHelper.AddTooltipPostCall("Unit", "OnTooltipSetUnit", function(tip, data)
+    if not tip or not tip.ezCard or (tip.IsForbidden and tip:IsForbidden()) then return end
     tip.ezWoWTooltipUnitRows = nil
-    local _, unit = tip:GetUnit()
+    local _, unit = platformHelper.GetTooltipUnit(tip, data)
     if not unit or addon:IsUnitRestricted(unit) then return end
     local debug = addon.debugNextUnit and tip == GameTooltip
     if debug then

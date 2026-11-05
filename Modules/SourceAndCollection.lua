@@ -45,11 +45,12 @@ function addon:InsertOrUpdateTooltipLine(tip, prefixPattern, fullText)
                     right:SetText(nil)
                     right:Hide()
                 end
-                return left
+                return left, true
             end
         end
     end
     tip:AddLine(fullText)
+    return nil, true
 end
 
 function addon:StripMatchingTooltipLine(tip, prefixPattern)
@@ -152,7 +153,7 @@ function addon.SanitizeUnitTooltipTextLines(tip)
                         -- Keep our own decimal ilvl + (GearScore) line and remove the duplicate native line
                         left:SetText(nil)
                     elseif rawNum and rawNum > 0 then
-                        local _, tipUnit = tip:GetUnit()
+                        local _, tipUnit = compat.GetTooltipUnit(tip)
                         local formatted = (addon.FormatPlayerIlvlAndGearScore and addon:FormatPlayerIlvlAndGearScore(tipUnit, rawNum))
                             or format("%s|cffA7B9C5%s:|r |cffEDF4F7%.1f|r", ILVL_PREFIX_TAG, resolveExtraLocaleText("ilvl"), rawNum)
                         left:SetText(formatted)
@@ -618,7 +619,11 @@ function DropSourceInspector.verifyItemCollectionStatus(itemID, itemLink, isZone
     local linkOrID = itemLink or itemID
 
     local mountSpell = addon.MountItemDB and addon.MountItemDB[itemID]
-    local mountID = (C_MountJournal and C_MountJournal.GetMountFromItem) and select(2, pcall(C_MountJournal.GetMountFromItem, itemID))
+    local mountID
+    if C_MountJournal and C_MountJournal.GetMountFromItem then
+        local isCallOk, mID = pcall(C_MountJournal.GetMountFromItem, itemID)
+        if isCallOk then mountID = tonumber(nosecret(mID)) end
+    end
     if not mountID and mountSpell and C_MountJournal and C_MountJournal.GetMountFromSpell then
         local isCallOk, mID = pcall(C_MountJournal.GetMountFromSpell, mountSpell)
         if isCallOk then mountID = nosecret(mID) end

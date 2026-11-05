@@ -747,10 +747,37 @@ function addon:UpdateIssueReportState()
     if type(BugReportInterceptor.Hide) == "function" then
         if AuraCasterTracker.shouldHideIssueReport() then
             BugReportInterceptor:Hide()
-        else
-            BugReportInterceptor:Show()
+            AuraCasterTracker.issueReporterHiddenByUs = true
+        elseif AuraCasterTracker.issueReporterHiddenByUs then
+            -- show it once when the option is turned off; never force it visible on every tooltip
+            AuraCasterTracker.issueReporterHiddenByUs = nil
+            if type(BugReportInterceptor.Show) == "function" then
+                pcall(BugReportInterceptor.Show, BugReportInterceptor)
+            end
         end
     end
+end
+
+function AuraCasterTracker.restoreHiddenTelemetryRows(tip)
+    local rows = tip and tip.ezHiddenTelemetryRows
+    if not rows then return end
+    tip.ezHiddenTelemetryRows = nil
+    for _, row in ipairs(rows) do
+        row:Show()
+    end
+end
+
+function AuraCasterTracker.hideTelemetryRow(tip, row)
+    row:SetText(nil)
+    row:Hide()
+    if not tip.ezHiddenTelemetryRows then
+        tip.ezHiddenTelemetryRows = {}
+        if not tip.ezTelemetryClearHooked and tip.HasScript and tip:HasScript("OnTooltipCleared") then
+            tip.ezTelemetryClearHooked = true
+            tip:HookScript("OnTooltipCleared", AuraCasterTracker.restoreHiddenTelemetryRows)
+        end
+    end
+    tip.ezHiddenTelemetryRows[#tip.ezHiddenTelemetryRows + 1] = row
 end
 
 function addon.RemoveDebugTelemetryTooltipLines(tip)
@@ -768,14 +795,12 @@ function addon.RemoveDebugTelemetryTooltipLines(tip)
         if lText and lText ~= "" then
             local plain = cleanColors(lText)
             if AuraCasterTracker.hasPtrBugShortcutLine(plain) then
-                left:SetText(nil)
-                left:Hide()
+                AuraCasterTracker.hideTelemetryRow(tip, left)
                 changed = true
                 local prev = _G[tipName .. "TextLeft" .. (indexEntry - 1)]
                 local prevTxt = prev and nosecret(prev:GetText())
                 if prev and (not prevTxt or prevTxt == "" or prevTxt == " ") then
-                    prev:SetText(nil)
-                    prev:Hide()
+                    AuraCasterTracker.hideTelemetryRow(tip, prev)
                 end
             end
         end
@@ -799,6 +824,7 @@ end
 
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and TooltipDataProcessor.AllTypes then
     pcall(TooltipDataProcessor.AddTooltipPostCall, TooltipDataProcessor.AllTypes, function(tip)
+        if not addon.IsDecoratableTooltip(tip) then return end
         addon.RemoveDebugTelemetryTooltipLines(tip)
     end)
 end

@@ -259,10 +259,8 @@ local statusBar = _G.GameTooltipStatusBar
 local barParts
 
 function CardThemeRenderer.tooltipUnit()
-    if GameTooltip.GetUnit then
-        local _, unit = GameTooltip:GetUnit()
-        if unit and not platformHelper.issecret(unit) then return unit end
-    end
+    local _, tipUnit = platformHelper.GetTooltipUnit(GameTooltip)
+    if tipUnit and not platformHelper.issecret(tipUnit) then return tipUnit end
     local focus = platformHelper.GetMouseFocus()
     local unit = focus and focus.unit
     if unit and not platformHelper.issecret(unit) then return unit end

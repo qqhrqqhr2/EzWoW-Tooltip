@@ -620,9 +620,9 @@ local lastInspectTime = 0
 function TalentTreeInspector.determineUnitForGUID(guid)
     if not guid or issecret(guid) then return nil end
     if nosecret(UnitGUID("player")) == guid then return "player" end
-    if GameTooltip and GameTooltip.GetUnit then
-        local isCallOk, _, unitRef = pcall(GameTooltip.GetUnit, GameTooltip)
-        if isCallOk and unitRef and not issecret(unitRef) and UnitExists(unitRef) and nosecret(UnitGUID(unitRef)) == guid then
+    if GameTooltip then
+        local _, unitRef = compat.GetTooltipUnit(GameTooltip)
+        if unitRef and not issecret(unitRef) and UnitExists(unitRef) and nosecret(UnitGUID(unitRef)) == guid then
             return unitRef
         end
     end
@@ -777,11 +777,9 @@ if NotifyInspect then
 end
 
 local eventFrame = CreateFrame("Frame")
-eventFrame:RegisterEvent("INSPECT_READY")
-eventFrame:RegisterEvent("PLAYER_TALENT_UPDATE")
-eventFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-eventFrame:RegisterEvent("TRAIT_CONFIG_UPDATED")
-eventFrame:RegisterEvent("ACTIVE_COMBAT_CONFIG_CHANGED")
+for _, eventName in ipairs({ "INSPECT_READY", "PLAYER_TALENT_UPDATE", "PLAYER_SPECIALIZATION_CHANGED", "TRAIT_CONFIG_UPDATED", "ACTIVE_COMBAT_CONFIG_CHANGED" }) do
+    pcall(eventFrame.RegisterEvent, eventFrame, eventName)
+end
 eventFrame:SetScript("OnEvent", function(self, event, arg1)
     if event == "INSPECT_READY" then
         local guid = nosecret(arg1)

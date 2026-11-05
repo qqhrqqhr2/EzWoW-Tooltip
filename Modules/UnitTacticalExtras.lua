@@ -453,8 +453,8 @@ end
 function UnitTacticalOverlay.refreshUnitExtras(tip, unit, isInspectReady)
     if not tip or tip ~= GameTooltip then return end
     if not unit then
-        local isCallOk, _, unitRef = pcall(tip.GetUnit, tip)
-        if isCallOk and unitRef and not issecret(unitRef) and UnitExists(unitRef) then unit = unitRef end
+        local _, unitRef = compat.GetTooltipUnit(tip)
+        if unitRef and not issecret(unitRef) and UnitExists(unitRef) then unit = unitRef end
     end
     if not unit or not UnitExists(unit) or addon:IsUnitRestricted(unit) then return end
 
@@ -600,8 +600,8 @@ inspectFrame:SetScript("OnEvent", function(self, event, arg1)
         end
     end
     if not GameTooltip:IsShown() then return end
-    local isCallOk, _, unit = pcall(GameTooltip.GetUnit, GameTooltip)
-    if isCallOk and unit and not issecret(unit) and UnitExists(unit) then
+    local _, unit = compat.GetTooltipUnit(GameTooltip)
+    if unit and not issecret(unit) and UnitExists(unit) then
         local uGuid = nosecret(UnitGUID(unit))
         if not guid or uGuid == guid then
             UnitTacticalOverlay.refreshUnitExtras(GameTooltip, unit, true)
@@ -615,8 +615,8 @@ GameTooltip:HookScript("OnUpdate", function(self, elapsed)
     if self._eztExtrasElapsed < 0.35 then return end
     self._eztExtrasElapsed = 0
     if not self.ezWoWTooltipUnitRows then return end
-    local isCallOk, _, unit = pcall(self.GetUnit, self)
-    if not isCallOk or not unit or issecret(unit) or not UnitExists(unit) then return end
+    local _, unit = compat.GetTooltipUnit(self)
+    if not unit or issecret(unit) or not UnitExists(unit) then return end
     -- Only refresh dynamic live lines (speed, casting, threat) on periodic tick to avoid layout churn
     local hasPlayer = nosecret(UnitIsPlayer(unit))
     local pCfg = addon.db and addon.db.unit and addon.db.unit.player

@@ -42,24 +42,41 @@ local function CountVisibleTooltipLines(tipFrame)
     return math.max(count, tipFrame.ezWoWTooltipUnitRows or 0)
 end
 
+-- Modern tooltips take a left padding (SetPadding(right, bottom, left, top)) and then lay every
+-- line out to the right of it themselves; GetPadding returns four values there. Older clients
+-- only take (right, bottom), so the text lines have to be moved by hand instead.
+local leftPaddingSupported
+local function SupportsLeftPadding(tipFrame)
+    if leftPaddingSupported ~= nil then return leftPaddingSupported end
+    leftPaddingSupported = false
+    if tipFrame and tipFrame.SetPadding and tipFrame.GetPadding then
+        local isCallOk, valueCount = pcall(function() return select("#", tipFrame:GetPadding()) end)
+        leftPaddingSupported = (isCallOk and valueCount >= 4) and true or false
+    end
+    return leftPaddingSupported
+end
+
 local function AlignTooltipTextColumn(tipFrame, xOffset)
     if not tipFrame then return end
+    -- With left padding the client positions the lines; moving them as well would double the shift.
+    if SupportsLeftPadding(tipFrame) then return end
     local baseName = tipFrame.GetName and tipFrame:GetName()
     if not baseName then return end
     local numLines = (tipFrame.NumLines and tipFrame:NumLines()) or 0
     local maxScan = math.max(numLines, 30)
-    local prevLeft = nil
+    -- Only move the horizontal start of lines the client anchors to the tooltip itself.
+    -- Lines chained to the line above follow it, and the vertical layout (which the
+    -- Mainline engine computes itself) is never touched: re-chaining every line with
+    -- ClearAllPoints() mixed up the offsets and made rows overlap.
     for i = 1, maxScan do
         local left = _G[baseName .. "TextLeft" .. i]
         if not left then break end
-        local _, _, _, _, yOfs = left:GetPoint(1)
-        left:ClearAllPoints()
-        if i == 1 or not prevLeft then
-            left:SetPoint("TOPLEFT", tipFrame, "TOPLEFT", xOffset, yOfs or -10)
-        else
-            left:SetPoint("TOPLEFT", prevLeft, "BOTTOMLEFT", 0, yOfs or -2)
+        if (left:GetNumPoints() or 0) == 1 then
+            local point, relTo, relPoint, xOfs, yOfs = left:GetPoint(1)
+            if relTo == tipFrame and (point == "TOPLEFT" or point == "LEFT") and xOfs ~= xOffset then
+                left:SetPoint(point, relTo, relPoint, xOffset, yOfs or 0)
+            end
         end
-        prevLeft = left
     end
 end
 
@@ -70,7 +87,13 @@ function UnitModelPreviewer.refreshTooltipPadding(tipFrame, padWidth)
         pcall(tipFrame.SetMinimumWidth, tipFrame, 0)
     end
     if tipFrame.SetPadding then
-        pcall(tipFrame.SetPadding, tipFrame, padWidth, 0)
+        if SupportsLeftPadding(tipFrame) then
+            -- room for the model on the left; the client keeps every line clear of it
+            pcall(tipFrame.SetPadding, tipFrame, 0, 0, padWidth, 0)
+        else
+            -- legacy: widen on the right, AlignTooltipTextColumn then shifts the lines
+            pcall(tipFrame.SetPadding, tipFrame, padWidth, 0)
+        end
     end
 end
 
@@ -151,7 +174,8 @@ function UnitModelPreviewer.dismissPreviewWidget()
             pcall(playerModelWidget.ClearModel, playerModelWidget)
         end
     end
-    local tipFrame = activeOwnerTooltip or GameTooltip
+    -- Only undo our own layout; a tooltip we never shifted keeps the client's padding and anchors.
+    local tipFrame = activeOwnerTooltip
     if tipFrame then
         inLayoutSync = true
         AlignTooltipTextColumn(tipFrame, 10)

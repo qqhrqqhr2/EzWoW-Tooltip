@@ -24,8 +24,10 @@ local format = string.format
 
 function EntryIdentifierAppender.prefixTitleIcon(tip, tex)
     tex = nosecret(tex)
-    if not tex or tex == "" then return end
-    local line1 = _G[tip:GetName() .. "TextLeft1"]
+    if not tex or tex == "" or not tip then return end
+    local tipName = tip.GetName and tip:GetName()
+    if type(tipName) ~= "string" or issecret(tipName) then return end
+    local line1 = _G[tipName .. "TextLeft1"]
     local extractSafeTooltipText = line1 and nosecret(line1:GetText())
     if not extractSafeTooltipText or extractSafeTooltipText == "" then return end
     local tag = format("|T%s:16:16:0:0:32:32:2:30:2:30|t ", tostring(tex))
@@ -62,7 +64,7 @@ function EntryIdentifierAppender.extractItemQuality(link)
 end
 
 function EntryIdentifierAppender.onItemTooltip(tip, link)
-    link = link or select(2, tip:GetItem())
+    link = link or select(2, platformHelper.GetTooltipItem(tip))
     if not link or issecret(link) then return end
     local quality, tex = EntryIdentifierAppender.extractItemQuality(link)
 
@@ -81,8 +83,9 @@ function EntryIdentifierAppender.onItemTooltip(tip, link)
     end
 end
 
-platformHelper.AddTooltipPostCall("Item", "OnTooltipSetItem", function(tip)
-    local _, link = tip:GetItem()
+platformHelper.AddTooltipPostCall("Item", "OnTooltipSetItem", function(tip, data)
+    if not addon.IsDecoratableTooltip(tip) then return end
+    local _, link = platformHelper.GetTooltipItem(tip, data)
     if link then
         bus:trigger("tooltip:item", tip, link)
     end
@@ -91,8 +94,8 @@ end)
 if EmbeddedItemTooltip_OnTooltipSetItem then
     hooksecurefunc("EmbeddedItemTooltip_OnTooltipSetItem", function(sub)
         local parentFrame = sub:GetParent()
-        if not parentFrame then return end
-        local _, link = parentFrame:GetItem()
+        if not parentFrame or not addon.IsDecoratableTooltip(parentFrame) then return end
+        local _, link = platformHelper.GetTooltipItem(parentFrame)
         if link then
             bus:trigger("tooltip:item", parentFrame, link)
         end
@@ -107,7 +110,7 @@ end)
 -- On Spell Tooltip
 -----------------------------------------------------------------------------
 
-function EntryIdentifierAppender.onSpellTooltip(tip)
+function EntryIdentifierAppender.onSpellTooltip(tip, spellId)
     local activeCfg = addon.db.spell
     if activeCfg.background then
         local themeColor = activeCfg.background
@@ -118,18 +121,20 @@ function EntryIdentifierAppender.onSpellTooltip(tip)
         bus:trigger("tooltip.style.border.color", tip, themeColor[1], themeColor[2], themeColor[3], themeColor[4])
     end
     if activeCfg.showIcon then
-        local _, spellId = tip:GetSpell()
-        local tex = GetSpellTexture(nosecret(spellId))
+        spellId = nosecret(spellId) or select(2, platformHelper.GetTooltipSpell(tip))
+        local tex = GetSpellTexture(spellId)
         EntryIdentifierAppender.prefixTitleIcon(tip, tex)
     end
 end
 
-platformHelper.AddTooltipPostCall("Spell", "OnTooltipSetSpell", function(tip)
-    bus:trigger("tooltip:spell", tip)
+platformHelper.AddTooltipPostCall("Spell", "OnTooltipSetSpell", function(tip, data)
+    if not addon.IsDecoratableTooltip(tip) then return end
+    local _, spellId = platformHelper.GetTooltipSpell(tip, data)
+    bus:trigger("tooltip:spell", tip, spellId)
 end)
 
-bus:attachTrigger("tooltip:spell", function(_, tip)
-    EntryIdentifierAppender.onSpellTooltip(tip)
+bus:attachTrigger("tooltip:spell", function(_, tip, spellId)
+    EntryIdentifierAppender.onSpellTooltip(tip, spellId)
 end)
 
 if ItemRefTooltip and ItemRefTooltip.SetHyperlink then
@@ -162,24 +167,25 @@ if C_MountJournal and C_MountJournal.GetMountIDs then
         end
     end)
 
-    hooksecurefunc(GameTooltip, "SetUnitAura", function(tip, ...)
-        if not UnitAura then return end
-        local spellID = select(10, UnitAura(...))
-        local entry = mountBySpell[nosecret(spellID)]
-        if not entry then return end
-        local _, desc, sourceVal = C_MountJournal.GetMountInfoExtraByID(entry.id)
-        tip:AddLine(" ")
-        if sourceVal and sourceVal ~= "" then
-            tip:AddLine(sourceVal, 1, 1, 1)
-        end
-        if entry.collected then
-            tip:AddLine(COLLECTED or "Collected", 0.1, 1, 0.1)
-        end
-        if desc and desc ~= "" then
-            tip:AddLine(desc, 1, 0.82, 0, true)
-        end
-        tip:Show()
-    end)
+    if GameTooltip.SetUnitAura then
+        hooksecurefunc(GameTooltip, "SetUnitAura", function(tip, unit, index, filter)
+            local spellID = platformHelper.GetUnitAuraSpellAndIcon(unit, index, filter)
+            local entry = spellID and mountBySpell[spellID]
+            if not entry then return end
+            local _, desc, sourceVal = C_MountJournal.GetMountInfoExtraByID(entry.id)
+            tip:AddLine(" ")
+            if sourceVal and sourceVal ~= "" then
+                tip:AddLine(sourceVal, 1, 1, 1)
+            end
+            if entry.collected then
+                tip:AddLine(COLLECTED or "Collected", 0.1, 1, 0.1)
+            end
+            if desc and desc ~= "" then
+                tip:AddLine(desc, 1, 0.82, 0, true)
+            end
+            tip:Show()
+        end)
+    end
 end
 
 -----------------------------------------------------------------------------
@@ -200,12 +206,24 @@ function EntryIdentifierAppender.wantIDRow()
         or IsAltKeyDown()
 end
 
+-- true only when this exact ID row is already on the tooltip (a price or
+-- stat line that happens to contain the same number does not count)
+function EntryIdentifierAppender.hasIDRow(tip, rowText)
+    local tipName = tip and tip.GetName and nosecret(tip:GetName())
+    if type(tipName) ~= "string" or not tip.NumLines then return false end
+    for lineIdx = 2, tip:NumLines() do
+        local left = _G[tipName .. "TextLeft" .. lineIdx]
+        if left and nosecret(left:GetText()) == rowText then return true end
+    end
+    return false
+end
+
 function EntryIdentifierAppender.appendIDRow(tip, kind, rawId)
     rawId = nosecret(rawId)
     if not rawId or rawId == "" or not EntryIdentifierAppender.wantIDRow() then return end
-    local formatLocalizedLabel = addon.L[kind .. ".id"] or ID_LABELS[kind] or ID or "ID"
+    local formatLocalizedLabel = rawget(addon.L, kind .. ".id") or ID_LABELS[kind] or ID or "ID"
     local extractSafeTooltipText = format("%s: |cffffffff%s|r", formatLocalizedLabel, tostring(rawId))
-    if addon:FindLine(tip, tostring(rawId)) then return end
+    if EntryIdentifierAppender.hasIDRow(tip, extractSafeTooltipText) then return end
     tip:AddLine(extractSafeTooltipText, 1, 0.82, 0)
     tip:Show()
 end
@@ -223,8 +241,8 @@ bus:attachTrigger("tooltip:item", function(_, tip, link)
     EntryIdentifierAppender.appendLinkID(tip, link)
 end)
 
-bus:attachTrigger("tooltip:spell", function(_, tip)
-    local _, spellId = tip:GetSpell()
+bus:attachTrigger("tooltip:spell", function(_, tip, spellId)
+    spellId = spellId or select(2, platformHelper.GetTooltipSpell(tip))
     EntryIdentifierAppender.appendIDRow(tip, "spell", spellId)
 end)
 
@@ -250,14 +268,14 @@ if GameTooltip.SetArtifactPowerByID and C_ArtifactUI and C_ArtifactUI.GetPowerIn
 end
 
 function EntryIdentifierAppender.bindAuraIDs(method)
-    if not GameTooltip[method] or not UnitAura then return end
-    hooksecurefunc(GameTooltip, method, function(tip, ...)
-        local spellId = select(10, UnitAura(...))
+    if not GameTooltip[method] then return end
+    local defaultFilter = (method == "SetUnitDebuff") and "HARMFUL" or "HELPFUL"
+    hooksecurefunc(GameTooltip, method, function(tip, unit, index, filter)
+        local spellId, tex = platformHelper.GetUnitAuraSpellAndIcon(unit, index, nosecret(filter) or defaultFilter)
         if spellId then
             EntryIdentifierAppender.appendIDRow(tip, "spell", spellId)
         end
         if addon.db.spell.showIcon then
-            local tex = select(3, UnitAura(...))
             EntryIdentifierAppender.prefixTitleIcon(tip, tex)
         end
     end)
