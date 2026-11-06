@@ -1,13 +1,13 @@
-# v2.0.11
+# v2.0.12
 
 ### 한국어
-- 툴팁 제목 영역과 구분선이 제목 글자 크기·배율·줄바꿈에 맞춰 높이가 조정됩니다.
-- 오류 제보 줄 숨기기가 게임 기본 기능을 건드리지 않도록 개선했습니다.
-- 아이템 툴팁의 추가 정보가 두 번 처리되던 문제를 수정했습니다.
-- 일부 NPC 이름을 정식 서버에 맞게 수정했습니다.
+- 채집 대상(약초·광석 등) 툴팁에 필요한 전문기술 숙련도를 표시합니다.
+- 잡동사니 일괄 판매가 모든 아이템을 끝까지 판매하도록 고쳤습니다.
+- 전투 중·인스턴스에서 나던 버프 관련 오류와 "애드온 동작 차단" 문제를 수정했습니다.
+- 이름표 위 툴팁 등 일부 툴팁 위치 오류를 수정했습니다.
 
 ### English
-- The tooltip header band and divider now adjust to the title's font size, scale and wrapping.
-- Hiding the issue-report line no longer modifies a built-in game function.
-- Fixed item tooltip extras being processed twice.
-- Corrected some NPC names for the live realm.
+- Gathering nodes (herbs, ore and more) show the required profession skill.
+- Bulk junk selling now sells every item.
+- Fixed aura errors and blocked-action problems in combat and in instances.
+- Fixed tooltip anchoring errors on some frames such as nameplates.
