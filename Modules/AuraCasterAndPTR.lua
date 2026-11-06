@@ -246,6 +246,7 @@ end
 function AuraCasterTracker.inspectAndCachePlayerAuras()
     AuraCasterTracker.prepareSpellNameClassMap()
     if not C_UnitAuras or not C_UnitAuras.GetAuraDataByIndex then return end
+    if compat.AurasRestricted() then return end
     local currentTime = (GetTime and GetTime()) or 0
 
     for _, filter in ipairs({ "HELPFUL", "HARMFUL" }) do
@@ -496,8 +497,10 @@ function AuraCasterTracker.determineAndAppendAuraCaster(tip, unit, index, filter
     local resolvedFilter = filter
     local resolvedAura = nil
     local candidateUnits = unit and { unit, "player", "target", "focus", "pet" } or { "player", "target", "focus", "pet" }
+    -- never query auras while the client refuses them: only the cached casters are used then
+    local aurasOpen = not compat.AurasRestricted()
 
-    if auraInstanceID and C_UnitAuras and C_UnitAuras.GetAuraDataByAuraInstanceID then
+    if aurasOpen and auraInstanceID and C_UnitAuras and C_UnitAuras.GetAuraDataByAuraInstanceID then
         for _, unitRef in ipairs(candidateUnits) do
             local isCallOk, alphaVal = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, unitRef, auraInstanceID)
             if isCallOk and alphaVal then
@@ -508,7 +511,7 @@ function AuraCasterTracker.determineAndAppendAuraCaster(tip, unit, index, filter
         end
     end
 
-    if not resolvedAura and unit and index and C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+    if aurasOpen and not resolvedAura and unit and index and C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
         local tryFilters = filter and { filter } or { "HELPFUL", "HARMFUL" }
         for _, f in ipairs(tryFilters) do
             local isCallOk, alphaVal = pcall(C_UnitAuras.GetAuraDataByIndex, unit, index, f)
@@ -524,7 +527,7 @@ function AuraCasterTracker.determineAndAppendAuraCaster(tip, unit, index, filter
         end
     end
 
-    if not resolvedAura and C_UnitAuras and C_UnitAuras.GetAuraDataByIndex and (spellID or cleanTitle) then
+    if aurasOpen and not resolvedAura and C_UnitAuras and C_UnitAuras.GetAuraDataByIndex and (spellID or cleanTitle) then
         for _, unitRef in ipairs(candidateUnits) do
             for _, f in ipairs({ "HELPFUL", "HARMFUL" }) do
                 for indexEntry = 1, 40 do
@@ -551,7 +554,7 @@ function AuraCasterTracker.determineAndAppendAuraCaster(tip, unit, index, filter
         spellID = spellID or tonumber(nosecret(resolvedAura.spellId))
         cleanTitle = cleanTitle or nosecret(resolvedAura.name)
         auraInstanceID = auraInstanceID or nosecret(resolvedAura.auraInstanceID)
-    elseif unit and index and UnitAura then
+    elseif aurasOpen and unit and index and UnitAura then
         local isCallOk, displayName, _, _, _, _, _, v7Val, v8Val, _, uSpellId = pcall(UnitAura, unit, index, filter or "HELPFUL")
         if isCallOk then
             v7Val, v8Val = nosecret(v7Val), nosecret(v8Val)
@@ -712,6 +715,7 @@ function AuraCasterTracker.hasPtrBugShortcutLine(plainText)
     return false
 end
 
+local issueReporterHooked = false   -- kept here, not as a field on the reporter frame
 function addon:UpdateIssueReportState()
     local BugReportInterceptor = _G["PTR_IssueReporter"]
     if type(BugReportInterceptor) ~= "table" then return end
@@ -719,8 +723,8 @@ function addon:UpdateIssueReportState()
     -- The reporter's own functions are left untouched (replacing them would spread taint);
     -- its tooltip line is removed afterwards by RemoveDebugTelemetryTooltipLines.
 
-    if not BugReportInterceptor._eztShowHooked and type(BugReportInterceptor.Hide) == "function" then
-        BugReportInterceptor._eztShowHooked = true
+    if not issueReporterHooked and type(BugReportInterceptor.Hide) == "function" then
+        issueReporterHooked = true
         hooksecurefunc(BugReportInterceptor, "Show", function(selfReporter)
             if AuraCasterTracker.shouldHideIssueReport() then
                 selfReporter:Hide()
@@ -749,10 +753,14 @@ function addon:UpdateIssueReportState()
     end
 end
 
+-- per-tooltip state kept in side tables, never as fields on the tooltip
+local hiddenTelemetryRows = compat.weakTable()   -- tooltip -> rows we hid
+local telemetryClearHooked = compat.weakTable()  -- tooltip -> OnTooltipCleared hooked
+
 function AuraCasterTracker.restoreHiddenTelemetryRows(tip)
-    local rows = tip and tip.ezHiddenTelemetryRows
+    local rows = tip and hiddenTelemetryRows[tip]
     if not rows then return end
-    tip.ezHiddenTelemetryRows = nil
+    hiddenTelemetryRows[tip] = nil
     for _, row in ipairs(rows) do
         row:Show()
     end
@@ -761,14 +769,16 @@ end
 function AuraCasterTracker.hideTelemetryRow(tip, row)
     row:SetText(nil)
     row:Hide()
-    if not tip.ezHiddenTelemetryRows then
-        tip.ezHiddenTelemetryRows = {}
-        if not tip.ezTelemetryClearHooked and tip.HasScript and tip:HasScript("OnTooltipCleared") then
-            tip.ezTelemetryClearHooked = true
+    local rows = hiddenTelemetryRows[tip]
+    if not rows then
+        rows = {}
+        hiddenTelemetryRows[tip] = rows
+        if not telemetryClearHooked[tip] and tip.HasScript and tip:HasScript("OnTooltipCleared") then
+            telemetryClearHooked[tip] = true
             tip:HookScript("OnTooltipCleared", AuraCasterTracker.restoreHiddenTelemetryRows)
         end
     end
-    tip.ezHiddenTelemetryRows[#tip.ezHiddenTelemetryRows + 1] = row
+    rows[#rows + 1] = row
 end
 
 function addon.RemoveDebugTelemetryTooltipLines(tip)

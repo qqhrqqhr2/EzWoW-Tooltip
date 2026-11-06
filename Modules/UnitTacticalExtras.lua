@@ -11,6 +11,7 @@ local addon = EzWoW_Tooltip
 local compat = select(2, ...).compat
 local issecret = compat.issecret
 local nosecret = compat.nosecret
+local tooltipUnitRows = compat.tooltipUnitRows   -- tooltip -> unit info row count (side table)
 local format = string.format
 local resolveActiveLocale = addon.GetActiveLocale
 local resolveExtraLocaleText = addon.EL
@@ -208,10 +209,7 @@ end
 
 function UnitTacticalOverlay.extractUnitMount(unit)
     if InCombatLockdown() or not C_UnitAuras or not C_UnitAuras.GetAuraDataByIndex then return nil end
-    if C_Secrets and C_Secrets.ShouldAurasBeSecret then
-        local isCallOk, sec = pcall(C_Secrets.ShouldAurasBeSecret)
-        if isCallOk and sec then return nil end
-    end
+    if compat.AurasRestricted() then return nil end
     for index = 1, 40 do
         local isCallOk, aura = pcall(C_UnitAuras.GetAuraDataByIndex, unit, index, "HELPFUL")
         if not isCallOk or not aura then break end
@@ -600,11 +598,12 @@ inspectFrame:SetScript("OnEvent", function(self, event, arg1)
     end
 end)
 
+local extrasElapsed = 0
 GameTooltip:HookScript("OnUpdate", function(self, elapsed)
-    self._eztExtrasElapsed = (self._eztExtrasElapsed or 0) + elapsed
-    if self._eztExtrasElapsed < 0.35 then return end
-    self._eztExtrasElapsed = 0
-    if not self.ezWoWTooltipUnitRows then return end
+    extrasElapsed = extrasElapsed + (elapsed or 0)
+    if extrasElapsed < 0.35 then return end
+    extrasElapsed = 0
+    if not tooltipUnitRows[self] then return end
     local _, unit = compat.GetTooltipUnit(self)
     if not unit or issecret(unit) or not UnitExists(unit) then return end
     -- Only refresh dynamic live lines (speed, casting, threat) on periodic tick to avoid layout churn

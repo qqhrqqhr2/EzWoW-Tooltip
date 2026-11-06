@@ -42,6 +42,7 @@ addon.db = {
         fadeOut           = false,
         skinMoreFrames    = true,
         hideIssueReport   = true,
+        showGatherSkill   = true,
         headerFont        = "default",
         headerFontSize    = "default",
         headerFontFlag    = "default",

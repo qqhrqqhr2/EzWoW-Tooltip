@@ -191,7 +191,23 @@ function TooltipEngine:PositionTooltip(tipFrame, ownerFrame)
     end
 end
 
+-- Forbidden frames (e.g. nameplate aura buttons) also pass through the default
+-- anchor; nothing can be anchored to them and SetOwner from our hook would error,
+-- so such owners (and forbidden tooltips) are left to the default placement.
+-- IsForbidden is the only method that is safe to call on a forbidden frame.
+function AnchorPlacementEngine.isFrameForbidden(frameObj)
+    if frameObj == nil then return false end
+    if PlatformBridge.issecret(frameObj) or type(frameObj) ~= "table" then return true end
+    local isForbiddenFn = frameObj.IsForbidden
+    if type(isForbiddenFn) ~= "function" then return false end
+    local isCallOk, isForbidden = pcall(isForbiddenFn, frameObj)
+    return (not isCallOk) or PlatformBridge.issecret(isForbidden) or isForbidden == true
+end
+
 hooksecurefunc("GameTooltip_SetDefaultAnchor", function(tipFrame, ownerFrame)
+    if AnchorPlacementEngine.isFrameForbidden(tipFrame) or AnchorPlacementEngine.isFrameForbidden(ownerFrame) then
+        return
+    end
     TooltipEngine:PositionTooltip(tipFrame, ownerFrame)
     EventDispatcher:trigger("tooltip:anchor", tipFrame, ownerFrame)
 end)

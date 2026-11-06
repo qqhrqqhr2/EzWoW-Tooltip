@@ -505,11 +505,7 @@ function TalentTreeInspector.extractSpecAndGearFallback(unit, class, isInspect, 
     end
 
     if not InCombatLockdown() and C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-        local auraSecret = false
-        if C_Secrets and C_Secrets.ShouldAurasBeSecret then
-            local sok, sec = pcall(C_Secrets.ShouldAurasBeSecret)
-            if sok and sec then auraSecret = true end
-        end
+        local auraSecret = compat.AurasRestricted()
         if not auraSecret then
             local iconMap = AURA_ICON_SPEC_MAP[class]
             local matchedTree

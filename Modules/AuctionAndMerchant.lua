@@ -555,6 +555,91 @@ end
 
 local JUNK_SELL_BATCH = 10      -- items sold per tick (the server rejects large single-frame bursts)
 local JUNK_SELL_INTERVAL = 0.25
+local JUNK_SWEEP_BASE_DELAY = 0.4
+local JUNK_SWEEP_MAX_DELAY = 1.6
+local JUNK_SWEEP_MAX_PASSES = 12
+local JUNK_SWEEP_MAX_STALLS = 3
+
+-- Selling is allowed by the merchant interaction, not by the frame: at MERCHANT_SHOW
+-- the merchant window may not be shown yet, so track the interaction ourselves.
+local merchantOpen = false
+local junkSweep = { current = nil }
+
+function AuctionPriceScanner.forEachBagSlot(fn)
+    local maxBags = NUM_BAG_SLOTS or 4
+    for bag = 0, maxBags do
+        local numSlots = (C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerNumSlots(bag))
+            or (GetContainerNumSlots and GetContainerNumSlots(bag)) or 0
+        for slot = 1, numSlots do
+            fn(bag, slot)
+        end
+    end
+end
+
+function AuctionPriceScanner.readSlotLink(bag, slot)
+    if C_Container and C_Container.GetContainerItemInfo then
+        local apiInfo = C_Container.GetContainerItemInfo(bag, slot)
+        return apiInfo and apiInfo.hyperlink or nil
+    elseif GetContainerItemInfo then
+        local _, _, _, _, _, _, itemLink = GetContainerItemInfo(bag, slot)
+        return itemLink
+    end
+    return nil
+end
+
+function AuctionPriceScanner.beginJunkSweep()
+    local sweep = { seen = {}, reported = false }
+    junkSweep.current = sweep
+    return sweep
+end
+
+-- Counts sellable poor-quality items (and slots whose quality is not known yet),
+-- remembering each one so the final report can tell what was really sold.
+function AuctionPriceScanner.countJunk(sweep)
+    local junk, unknown = 0, 0
+    if not (C_Container and C_Container.GetContainerItemInfo) then return junk, unknown end
+    local poor = (Enum and Enum.ItemQuality and Enum.ItemQuality.Poor) or 0
+    AuctionPriceScanner.forEachBagSlot(function(bag, slot)
+        local info = C_Container.GetContainerItemInfo(bag, slot)
+        if info and info.itemID then
+            if info.quality == nil then
+                unknown = unknown + 1
+            elseif info.quality == poor and not info.hasNoValue then
+                junk = junk + 1
+                local key = bag * 1000 + slot
+                if sweep and not sweep.seen[key] then
+                    local link, stackCount, sellPrice = AuctionPriceScanner.readJunkSlot(bag, slot)
+                    if link then
+                        sweep.seen[key] = { bag = bag, slot = slot, link = link, stack = stackCount or 1, price = sellPrice or 0 }
+                    end
+                end
+            end
+        end
+    end)
+    return junk, unknown
+end
+
+-- Prints the sold total (items that actually left the bags) and, when asked, the leftovers.
+function AuctionPriceScanner.reportJunkSweep(sweep, reportLeft)
+    if not sweep or sweep.reported then return end
+    sweep.reported = true
+    local soldCount, soldCopper = 0, 0
+    for _, rec in pairs(sweep.seen) do
+        if AuctionPriceScanner.readSlotLink(rec.bag, rec.slot) ~= rec.link then
+            soldCount = soldCount + rec.stack
+            soldCopper = soldCopper + rec.price * rec.stack
+        end
+    end
+    if soldCount > 0 and soldCopper > 0 then
+        print("|cffAEE26AEzWoW - Tooltip:|r " .. format(resolveExtraLocaleText("autoSellDone"), soldCount, addon.FormatCopperAsCoinIcons(soldCopper) or tostring(soldCopper)))
+    end
+    if reportLeft and merchantOpen then
+        local left = AuctionPriceScanner.countJunk(nil)
+        if left > 0 then
+            print("|cffAEE26AEzWoW - Tooltip:|r |cffE77C70" .. format(resolveExtraLocaleText("autoSellLeft"), left) .. "|r")
+        end
+    end
+end
 
 function AuctionPriceScanner.readJunkSlot(bag, slot)
     local link, stackCount, quality, locked
@@ -589,60 +674,55 @@ function AuctionPriceScanner.readJunkSlot(bag, slot)
 end
 
 function AuctionPriceScanner.sellJunkInBatches(isRetry)
+    -- per-item fallback for clients without the bulk junk-sell call
+    local sweep = AuctionPriceScanner.beginJunkSweep()
     local queue, hasUncached = {}, false
-    local maxBags = NUM_BAG_SLOTS or 4
-    for bag = 0, maxBags do
-        local numSlots = (C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerNumSlots(bag))
-            or (GetContainerNumSlots and GetContainerNumSlots(bag)) or 0
-        for slot = 1, numSlots do
-            local link, _, _, isUncached = AuctionPriceScanner.readJunkSlot(bag, slot)
-            if link then
-                queue[#queue + 1] = { bag = bag, slot = slot, link = link }
-            elseif isUncached then
-                hasUncached = true
-            end
+    AuctionPriceScanner.forEachBagSlot(function(bag, slot)
+        local link, stackCount, sellPrice, isUncached = AuctionPriceScanner.readJunkSlot(bag, slot)
+        if link then
+            queue[#queue + 1] = { bag = bag, slot = slot, link = link }
+            sweep.seen[bag * 1000 + slot] = { bag = bag, slot = slot, link = link, stack = stackCount or 1, price = sellPrice or 0 }
+        elseif isUncached then
+            hasUncached = true
         end
-    end
+    end)
 
     -- junk whose price was not cached yet gets one more pass once the data has loaded
-    local function scheduleRetry()
-        if hasUncached and not isRetry and C_Timer and C_Timer.After then
+    local willRetry = (hasUncached and not isRetry and C_Timer and C_Timer.After) and true or false
+    local function finish()
+        -- the server answers sell requests later: count what actually left the bags after a short wait
+        if C_Timer and C_Timer.After then
             C_Timer.After(1.0, function()
-                if MerchantFrame and MerchantFrame:IsShown() then
+                if sweep ~= junkSweep.current then return end
+                AuctionPriceScanner.reportJunkSweep(sweep, not willRetry)
+                if willRetry and merchantOpen then
                     AuctionPriceScanner.sellJunkInBatches(true)
                 end
             end)
+        else
+            AuctionPriceScanner.reportJunkSweep(sweep, false)
         end
+        return nil
     end
-    if #queue == 0 then return scheduleRetry() end
+    if #queue == 0 then return finish() end
 
-    local soldCount, soldCopper, cursor = 0, 0, 1
-    local function finish()
-        scheduleRetry()
-        if soldCount > 0 and soldCopper > 0 then
-            print("|cffAEE26AEzWoW - Tooltip:|r " .. format(resolveExtraLocaleText("autoSellDone"), soldCount, addon.FormatCopperAsCoinIcons(soldCopper) or tostring(soldCopper)))
-        end
-    end
+    local cursor = 1
     local function step()
-        if not (MerchantFrame and MerchantFrame:IsShown()) then return finish() end
+        if sweep ~= junkSweep.current then return end
+        if not merchantOpen then return finish() end
         local sentThisTick = 0
         while cursor <= #queue and sentThisTick < JUNK_SELL_BATCH do
             local q = queue[cursor]
             cursor = cursor + 1
             -- re-check: another addon (or the player) may have sold/moved it already
-            local link, stackCount, sellPrice = AuctionPriceScanner.readJunkSlot(q.bag, q.slot)
+            local link = AuctionPriceScanner.readJunkSlot(q.bag, q.slot)
             if link and link == q.link then
-                local ok
                 if C_Container and C_Container.UseContainerItem then
-                    ok = pcall(C_Container.UseContainerItem, q.bag, q.slot)
+                    pcall(C_Container.UseContainerItem, q.bag, q.slot)
                 elseif UseContainerItem then
-                    ok = pcall(UseContainerItem, q.bag, q.slot)
+                    pcall(UseContainerItem, q.bag, q.slot)
                 end
-                if ok then
-                    soldCount = soldCount + stackCount
-                    soldCopper = soldCopper + sellPrice * stackCount
-                    sentThisTick = sentThisTick + 1
-                end
+                sentThisTick = sentThisTick + 1
             end
         end
         if cursor <= #queue and C_Timer and C_Timer.After then
@@ -654,12 +734,61 @@ function AuctionPriceScanner.sellJunkInBatches(isRetry)
     step()
 end
 
+-- Bulk junk sell. One SellAllJunkItems call is fire-and-forget: requests past the
+-- server rate limit are dropped and items whose data is not cached yet are skipped,
+-- so re-count after each pass and send again while the count keeps falling.
+function AuctionPriceScanner.sellJunkSweep()
+    local sweep = AuctionPriceScanner.beginJunkSweep()
+    sweep.passes, sweep.lastCount, sweep.stalls, sweep.delay = 0, math.huge, 0, JUNK_SWEEP_BASE_DELAY
+
+    local function pass()
+        if sweep ~= junkSweep.current then return end
+        if not merchantOpen then return AuctionPriceScanner.reportJunkSweep(sweep, false) end
+
+        local junk, unknown = AuctionPriceScanner.countJunk(sweep)
+        if junk == 0 and unknown == 0 then return AuctionPriceScanner.reportJunkSweep(sweep, false) end
+
+        sweep.passes = sweep.passes + 1
+        if junk > sweep.lastCount then
+            -- uncached slots resolved into newly visible junk: progress, not a stall
+            sweep.stalls, sweep.delay = 0, JUNK_SWEEP_BASE_DELAY
+        elseif junk == sweep.lastCount then
+            -- nothing moved: an unsellable item or a dropped request, so back off before giving up
+            sweep.stalls = sweep.stalls + 1
+            sweep.delay = math.min(sweep.delay * 2, JUNK_SWEEP_MAX_DELAY)
+            if sweep.stalls >= JUNK_SWEEP_MAX_STALLS then
+                return AuctionPriceScanner.reportJunkSweep(sweep, true)
+            end
+        else
+            sweep.stalls, sweep.delay = 0, JUNK_SWEEP_BASE_DELAY
+        end
+        sweep.lastCount = junk
+
+        if junk > 0 then pcall(C_MerchantFrame.SellAllJunkItems) end
+        if sweep.passes >= JUNK_SWEEP_MAX_PASSES then
+            -- the last request is still in flight: verify once more after it lands
+            C_Timer.After(sweep.delay, function()
+                if sweep ~= junkSweep.current then return end
+                AuctionPriceScanner.reportJunkSweep(sweep, true)
+            end)
+            return
+        end
+        C_Timer.After(sweep.delay, pass)
+    end
+    pass()
+end
+
 function AuctionPriceScanner.handleMerchantShow()
     if IsShiftKeyDown and IsShiftKeyDown() then return end
     local iCfg = addon.db and addon.db.item
 
     if not iCfg or iCfg.autoSellJunk ~= false then
-        AuctionPriceScanner.sellJunkInBatches()
+        if C_MerchantFrame and C_MerchantFrame.SellAllJunkItems and C_Container and C_Container.GetContainerItemInfo
+            and C_Timer and C_Timer.After then
+            AuctionPriceScanner.sellJunkSweep()
+        else
+            AuctionPriceScanner.sellJunkInBatches()
+        end
     end
 
     if not iCfg or iCfg.autoRepair ~= false then
@@ -685,6 +814,7 @@ for _, eventFrame in ipairs({
     "PLAYER_ENTERING_WORLD",
     "ADDON_LOADED",
     "MERCHANT_SHOW",
+    "MERCHANT_CLOSED",
     "AUCTION_HOUSE_SHOW",
     "AUCTION_HOUSE_CLOSED",
     "AUCTION_HOUSE_THROTTLED_SYSTEM_READY",
@@ -712,7 +842,10 @@ extraEventsFrame:SetScript("OnEvent", function(self, event, arg1)
             AuctionPriceScanner.prepareAuctionScanButton()
         end
     elseif event == "MERCHANT_SHOW" then
+        merchantOpen = true
         AuctionPriceScanner.handleMerchantShow()
+    elseif event == "MERCHANT_CLOSED" then
+        merchantOpen = false
     elseif event == "AUCTION_HOUSE_SHOW" then
         ahScanState.isOpen = true
         ahScanState.session = ahScanState.session + 1

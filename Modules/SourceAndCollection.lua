@@ -11,6 +11,7 @@ local addon = EzWoW_Tooltip
 local compat = select(2, ...).compat
 local issecret = compat.issecret
 local nosecret = compat.nosecret
+local tooltipUnitRows = compat.tooltipUnitRows   -- tooltip -> unit info row count (side table)
 local format = string.format
 local resolveActiveLocale = addon.GetActiveLocale
 local resolveExtraLocaleText = addon.EL
@@ -32,7 +33,7 @@ function addon:InsertOrUpdateTooltipLine(tip, prefixPattern, fullText)
     end
     local displayName = tip:GetName()
     if displayName then
-        local startRow = (tip.ezWoWTooltipUnitRows or 2) + 1
+        local startRow = (tooltipUnitRows[tip] or 2) + 1
         for index = startRow, tip:NumLines() do
             local left = _G[displayName .. "TextLeft" .. index]
             local right = _G[displayName .. "TextRight" .. index]
@@ -116,11 +117,12 @@ function DropSourceInspector.hasForeignCompletionistLine(plainLeft, plainRight)
     return false
 end
 
+local normalizingTooltips = compat.weakTable()   -- re-entry guard per tooltip (side table)
 function addon.SanitizeUnitTooltipTextLines(tip)
-    if not tip or tip._eztNormalizing then return end
+    if not tip or normalizingTooltips[tip] then return end
     local displayName = tip:GetName()
     if not displayName then return end
-    tip._eztNormalizing = true
+    normalizingTooltips[tip] = true
 
     local playerCfg = addon.db and addon.db.unit and addon.db.unit.player
     local presentIlvl = not playerCfg or (playerCfg.showItemLevel ~= false)
@@ -226,7 +228,7 @@ function addon.SanitizeUnitTooltipTextLines(tip)
         end
     end
 
-    tip._eztNormalizing = nil
+    normalizingTooltips[tip] = nil
 end
 
 local npcNameCache = {}

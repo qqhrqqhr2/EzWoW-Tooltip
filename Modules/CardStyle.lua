@@ -11,6 +11,7 @@ local addon = EzWoW_Tooltip
 local platformHelper = ns.compat
 local bus = ns.events
 local PAL = addon.PALETTE
+local tooltipCards = platformHelper.tooltipCards   -- tooltip -> card layout (never a field on the frame)
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 local HEADER_HEIGHT = 28
@@ -134,7 +135,7 @@ function CardThemeRenderer.measureBand(tip)
 end
 
 function CardThemeRenderer.refreshBand(tip)
-    local cardLayout = tip and tip.ezCard
+    local cardLayout = tip and tooltipCards[tip]
     if not cardLayout then return end
     local height = CardThemeRenderer.measureBand(tip) or HEADER_HEIGHT
     if height ~= cardLayout.bandHeight then
@@ -171,11 +172,27 @@ end
 
 local bootstrapDone = {}
 
+-- Safe to restyle? Forbidden tooltips are off limits, and tooltips built from an
+-- inherited forbidden layout do not report IsForbidden, but their size reads back
+-- secret (or the read fails), so probe the width as well.
+function CardThemeRenderer.isTooltipUsable(tip)
+    if type(tip) ~= "table" or platformHelper.issecret(tip) then return false end
+    if tip.IsForbidden then
+        local isCallOk, isForbidden = pcall(tip.IsForbidden, tip)
+        if not isCallOk or isForbidden then return false end
+    end
+    if tip.GetWidth then
+        local isCallOk, width = pcall(tip.GetWidth, tip)
+        if not isCallOk or platformHelper.issecret(width) then return false end
+    end
+    return true
+end
+
 function CardThemeRenderer.skin(tip)
-    if not tip or (tip.IsForbidden and tip:IsForbidden()) then return end
-    if tip.ezCard then return tip.ezCard end
+    if not CardThemeRenderer.isTooltipUsable(tip) then return end
+    if tooltipCards[tip] then return tooltipCards[tip] end
     local cardLayout = CardThemeRenderer.assembleCard(tip)
-    tip.ezCard = cardLayout
+    tooltipCards[tip] = cardLayout
     CardThemeRenderer.layoutCard(tip, cardLayout)
     CardThemeRenderer.paintCard(tip, cardLayout)
 
@@ -223,7 +240,7 @@ end
 
 function addon:RestoreDefaultTooltipTheme(tip)
     local g = CardThemeRenderer.savedDB()
-    if not g or not tip.ezCard then return end
+    if not g or not tip or not tooltipCards[tip] then return end
     local bcVal, backdropTex = g.borderColor, g.background
     self:ApplyTooltipBorderColor(tip, bcVal[1], bcVal[2], bcVal[3], bcVal[4])
     self:ApplyTooltipBackgroundColor(tip, backdropTex[1], backdropTex[2], backdropTex[3], backdropTex[4])
@@ -393,7 +410,6 @@ function CardThemeRenderer.assembleBar()
     barParts.rule:SetColorTexture(PAL.border[1], PAL.border[2], PAL.border[3], 1)
     barParts.text = statusBar:CreateFontString(nil, "OVERLAY")
     barParts.text:SetPoint("CENTER", statusBar, "CENTER", 0, 0)
-    statusBar.TextString = barParts.text
     statusBar:HookScript("OnShow", function() CardThemeRenderer.colorBar(); CardThemeRenderer.syncBarText() end)
     statusBar:HookScript("OnValueChanged", function() CardThemeRenderer.colorBar(); CardThemeRenderer.syncBarText() end)
 end
@@ -425,7 +441,7 @@ function CardThemeRenderer.skinExtraFrames()
     if not g or not g.skinMoreFrames then return end
     for _, frameName in ipairs(EXTRA_FRAMES) do
         local containerFrame = _G[frameName]
-        if containerFrame and containerFrame.CreateTexture and not containerFrame.ezCard then
+        if containerFrame and containerFrame.CreateTexture and not tooltipCards[containerFrame] then
             addon.TrackTooltip(containerFrame)
         end
     end
@@ -457,8 +473,21 @@ bus:attachTrigger("EZWOW_TOOLTIP_GENERAL_INIT, tooltip:variables:loaded", functi
 
 bus:attachTrigger("tooltip:cleared", function(_, tip) addon:RestoreDefaultTooltipTheme(tip) end)
 
+-- The backdrop-style functions are also called from secure code (e.g. the casting
+-- bar), so restyling inside the hook would taint that caller. Repaint on the next
+-- frame instead, once per tooltip however many calls arrive in between.
+local pendingReassert = platformHelper.weakTable()
 function CardThemeRenderer.reassert(tip)
-    if tip and tip.ezCard then CardThemeRenderer.paintCard(tip, tip.ezCard) end
+    if not tip or platformHelper.issecret(tip) or not tooltipCards[tip] or pendingReassert[tip] then return end
+    if not (C_Timer and C_Timer.After) then return end
+    pendingReassert[tip] = true
+    C_Timer.After(0, function()
+        pendingReassert[tip] = nil
+        local cardLayout = tooltipCards[tip]
+        if cardLayout and CardThemeRenderer.isTooltipUsable(tip) then
+            CardThemeRenderer.paintCard(tip, cardLayout)
+        end
+    end)
 end
 if _G.SharedTooltip_SetBackdropStyle then hooksecurefunc("SharedTooltip_SetBackdropStyle", CardThemeRenderer.reassert) end
 if _G.GameTooltip_SetBackdropStyle then hooksecurefunc("GameTooltip_SetBackdropStyle", CardThemeRenderer.reassert) end

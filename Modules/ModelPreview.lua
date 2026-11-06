@@ -9,6 +9,7 @@ local UnitModelPreviewer = ns.UnitModelPreviewer or {}
 ns.UnitModelPreviewer = UnitModelPreviewer
 local TooltipEngine = EzWoW_Tooltip
 local PlatformBridge = ns.compat
+local tooltipUnitRows = PlatformBridge.tooltipUnitRows   -- tooltip -> unit info row count (side table)
 local EventDispatcher = ns.events
 local nosecret = PlatformBridge.nosecret
 
@@ -48,7 +49,7 @@ local function CountVisibleTooltipLines(tipFrame)
             count = count + 1
         end
     end
-    return math.max(count, tipFrame.ezWoWTooltipUnitRows or 0)
+    return math.max(count, tooltipUnitRows[tipFrame] or 0)
 end
 
 -- Modern tooltips take a left padding (SetPadding(right, bottom, left, top)) and then lay every

@@ -23,6 +23,15 @@ function PlatformBridge.nosecret(val)
     return val
 end
 
+-- Our per-frame state is kept in weak-keyed side tables, never as fields on
+-- Blizzard frames: a field written by addon code taints that frame for any
+-- secure code that later reads it.
+function PlatformBridge.weakTable()
+    return setmetatable({}, { __mode = "k" })
+end
+PlatformBridge.tooltipCards = PlatformBridge.weakTable()     -- tooltip -> card style layout
+PlatformBridge.tooltipUnitRows = PlatformBridge.weakTable()  -- tooltip -> number of unit info rows
+
 function PlatformBridge.anysecret(...)
     local grandTotal = select("#", ...)
     for entryIndex = 1, grandTotal do
@@ -130,10 +139,34 @@ PlatformBridge.GetSpellTexture = function(spellID)
     return nil
 end
 
+-- True when aura queries would fail for addon code (in combat, and in some
+-- instances even out of combat). A failing call builds an error, which is the
+-- expensive part, so every aura scan asks this first. Only the "restricted"
+-- answer is cached, and only for the current frame.
+local auraRestrictedAt = nil
+function PlatformBridge.AurasRestricted()
+    local frameTime = (type(_G.GetTime) == "function" and _G.GetTime()) or 0
+    if auraRestrictedAt == frameTime then return true end
+    local restricted = false
+    local secretsAPI = _G.C_Secrets
+    if secretsAPI and type(secretsAPI.ShouldAurasBeSecret) == "function" then
+        local isCallOk, answer = pcall(secretsAPI.ShouldAurasBeSecret)
+        restricted = (not isCallOk) or verifySecret(answer) or answer == true
+    else
+        local auraAPI = _G.C_UnitAuras
+        if auraAPI and type(auraAPI.GetAuraDataByIndex) == "function" then
+            restricted = not pcall(auraAPI.GetAuraDataByIndex, "player", 1, "HELPFUL")
+        end
+    end
+    if restricted then auraRestrictedAt = frameTime end
+    return restricted
+end
+
 -- Aura lookup by index: C_UnitAuras first, legacy UnitAura as fallback.
 -- Returns spellId, icon (secret values are dropped).
 function PlatformBridge.GetUnitAuraSpellAndIcon(unitToken, auraIndex, auraFilter)
     if unitToken == nil or auraIndex == nil then return nil end
+    if PlatformBridge.AurasRestricted() then return nil end
     local auraAPI = _G.C_UnitAuras
     if auraAPI and type(auraAPI.GetAuraDataByIndex) == "function" then
         local isCallOk, auraData = pcall(auraAPI.GetAuraDataByIndex, unitToken, auraIndex, auraFilter)
@@ -227,6 +260,17 @@ end
 function PlatformBridge.GetTooltipUnit(tipFrame, tooltipData)
     local isCallOk, unitName, unitToken = callTooltipMethod(tipFrame, "GetUnit")
     unitToken = isCallOk and PlatformBridge.nosecret(unitToken) or nil
+    -- The tooltip data names the unit the tooltip was built for by GUID; a world
+    -- unit's token is "mouseover", which may already point at another unit.
+    if (not unitToken or unitToken == "mouseover") and type(_G.UnitTokenFromGUID) == "function" then
+        local unitData = resolveTooltipData(tipFrame, tooltipData, "Unit")
+        local dataGUID = unitData and PlatformBridge.nosecret(unitData.guid)
+        if dataGUID then
+            local okToken, guidToken = pcall(_G.UnitTokenFromGUID, dataGUID)
+            guidToken = okToken and PlatformBridge.nosecret(guidToken) or nil
+            if guidToken then return unitName, guidToken end
+        end
+    end
     if unitToken then return unitName, unitToken end
     isCallOk, unitName, unitToken = callTooltipUtil("GetDisplayedUnit", tipFrame)
     unitToken = isCallOk and PlatformBridge.nosecret(unitToken) or nil

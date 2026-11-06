@@ -91,6 +91,7 @@ local L_EN = {
     showCastThreat  = "Show casting & threat %",
     showNpcTrack    = "NPC spawn time, layer & drops",
     hideIssueReport = "Hide Issue Reporter & F6 bug hint",
+    showGatherSkill = "Show gathering skill needed",
     grayDead        = "Gray out dead units",
     hpText          = "Show health numbers",
     hpHeight        = "HP Bar",
@@ -170,6 +171,7 @@ local LOCALES = {
         showCastThreat  = "시전 스킬 · 위협 수준(%) 표시",
         showNpcTrack    = "NPC 생존시간 · 위상 · 드랍 추적",
         hideIssueReport = "이슈 리포터 창 · F6 제보 문구 숨김",
+        showGatherSkill = "채집 필요 숙련도 표시",
         grayDead        = "죽은 대상 회색 표시",
         hpText          = "체력 수치 표시",
         hpHeight        = "체력바 높이",
@@ -662,6 +664,14 @@ LOCALES.ruRU.staticBoxHint = "Перетащите эту рамку, чтобы
 LOCALES.zhCN.staticBoxHint = "拖动此框以设置固定提示的位置。点击角落以设置展开锚点。"
 LOCALES.zhTW.staticBoxHint = "拖曳此框以設定固定提示的位置。點擊角落以設定展開錨點。"
 
+-- Gathering skill option.
+LOCALES.deDE.showGatherSkill = "Benötigte Sammelfertigkeit"
+LOCALES.frFR.showGatherSkill = "Compétence de récolte requise"
+LOCALES.esES.showGatherSkill = "Habilidad de recolección necesaria"
+LOCALES.ruRU.showGatherSkill = "Требуемый навык сбора"
+LOCALES.zhCN.showGatherSkill = "显示所需采集技能"
+LOCALES.zhTW.showGatherSkill = "顯示所需採集技能"
+
 local OPTION_TIPS_KO = {
     mask            = "툴팁 상단에 은은한 밝기 그라데이션(광택) 효과를 표시합니다.",
     fadeOut         = "마우스를 떼었을 때 툴팁이 즉시 닫히지 않고 부드럽게 서서히 사라집니다.",
@@ -699,6 +709,7 @@ local OPTION_TIPS_KO = {
     autoSellJunk    = "상점 창을 열었을 때 가방에 있는 회색(하급) 잡템을 자동으로 판매하고 획득 금액을 안내합니다. (Shift를 누른 채 상점을 열면 건너뜀)",
     autoRepair      = "수리 가능한 상인을 열었을 때 착용 및 가방의 모든 장비를 자동으로 수리합니다. (Shift를 누른 채 상점을 열면 건너뜀)",
     chatLinkHover   = "채팅창에 올라온 아이템·주문·퀘스트·업적 링크에 마우스를 올리기만 해도 툴팁을 보여 줍니다. 클릭하지 않아도 됩니다.",
+    showGatherSkill = "약초·광맥 툴팁과 가죽을 벗길 수 있는 시체 툴팁에 필요한 숙련도와 현재 숙련도를 난이도 색(빨강·주황·노랑·초록·회색)으로 표시합니다.",
 }
 
 local OPTION_TIPS_EN = {
@@ -738,6 +749,7 @@ local OPTION_TIPS_EN = {
     autoSellJunk    = "Automatically sells all poor-quality (grey) items in your bags when visiting a merchant (hold Shift while opening to skip).",
     autoRepair      = "Automatically repairs all damaged equipment when visiting a repair-capable merchant (hold Shift while opening to skip).",
     chatLinkHover   = "Shows the tooltip for item, spell, quest, and achievement links in chat as soon as you hover them, without clicking.",
+    showGatherSkill = "Shows the required and your current skill on herb, ore and skinnable corpse tooltips, in difficulty colours (red, orange, yellow, green, grey).",
 }
 
 function SettingsDialog.resolveCurrentLangCode()
@@ -1542,6 +1554,9 @@ function SettingsDialog.launchConfigWindow()
             addon.db.general.statusbarHeight = entryValue
             SettingsDialog.commitTooltipVisuals()
         end, 0, 16, 1)
+    createStyledCheckbox(625, -326, 160, "showGatherSkill",
+        function() return addon.db.general.showGatherSkill ~= false end,
+        function(entryValue) addon.db.general.showGatherSkill = entryValue end)
 
     
     

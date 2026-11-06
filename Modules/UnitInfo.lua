@@ -8,6 +8,8 @@ local UnitProfileFormatter = ns.UnitProfileFormatter or {}
 ns.UnitProfileFormatter = UnitProfileFormatter
 local addon = EzWoW_Tooltip
 local platformHelper = ns.compat
+local tooltipUnitRows = platformHelper.tooltipUnitRows   -- tooltip -> unit info row count (side table)
+local tooltipCards = platformHelper.tooltipCards
 local bus = ns.events
 local nosecret, issecret = platformHelper.nosecret, platformHelper.issecret
 local lineRegions = addon.LineRegions
@@ -295,7 +297,7 @@ function UnitProfileFormatter.writeLines(tip, rowWidgets, kept, gray)
             if right then right:SetText(nil); right:Hide() end
         end
     end
-    tip.ezWoWTooltipUnitRows = #rowWidgets
+    tooltipUnitRows[tip] = #rowWidgets
 end
 
 function UnitProfileFormatter.recolorCard(tip, info, cfg)
@@ -566,7 +568,7 @@ function addon:InsertOrUpdateTooltipLine(tip, pattern, text)
         existing:Show()
         return existing
     end
-    local first = (tip.ezWoWTooltipUnitRows or 1) + 1
+    local first = (tooltipUnitRows[tip] or 1) + 1
     for index = first, tip:NumLines() do
         local left, right = lineRegions(tip, index)
         local leftPos = left and nosecret(left:GetText())
@@ -593,13 +595,13 @@ end
 bus:attachTrigger("tooltip:unit", function(_, tip, unit) addon:PopulateUnitTooltipCard(tip, unit) end)
 
 bus:attachTrigger("tooltip:cleared, tooltip:hide", function(_, tip)
-    tip.ezWoWTooltipUnitRows = nil
+    if tip then tooltipUnitRows[tip] = nil end
     if current.tip == tip then current.tip, current.unit = nil, nil end
 end)
 
 platformHelper.AddTooltipPostCall("Unit", "OnTooltipSetUnit", function(tip, data)
-    if not tip or not tip.ezCard or (tip.IsForbidden and tip:IsForbidden()) then return end
-    tip.ezWoWTooltipUnitRows = nil
+    if not tip or not tooltipCards[tip] or (tip.IsForbidden and tip:IsForbidden()) then return end
+    tooltipUnitRows[tip] = nil
     local _, unit = platformHelper.GetTooltipUnit(tip, data)
     if not unit or addon:IsUnitRestricted(unit) then return end
     local debug = addon.debugNextUnit and tip == GameTooltip
@@ -622,7 +624,7 @@ GameTooltip:HookScript("OnUpdate", function(tip, elapsed)
     elapsedSince = elapsedSince + (elapsed or 0)
     if elapsedSince < 0.3 then return end
     elapsedSince = 0
-    if current.tip ~= tip or not tip.ezWoWTooltipUnitRows or not addon.db then return end
+    if current.tip ~= tip or not tooltipUnitRows[tip] or not addon.db then return end
     local unit = current.unit
     if not unit or not nosecret(UnitExists(unit)) or addon:IsUnitRestricted(unit) then return end
     local cfg = nosecret(UnitIsPlayer(unit)) and addon.db.unit.player or addon.db.unit.npc
