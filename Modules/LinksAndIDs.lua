@@ -183,6 +183,7 @@ if C_MountJournal and C_MountJournal.GetMountIDs then
             if desc and desc ~= "" then
                 tip:AddLine(desc, 1, 0.82, 0, true)
             end
+            addon.AttributeTooltip(tip)
             tip:Show()
         end)
     end
@@ -225,6 +226,7 @@ function EntryIdentifierAppender.appendIDRow(tip, kind, rawId)
     local extractSafeTooltipText = format("%s: |cffffffff%s|r", formatLocalizedLabel, tostring(rawId))
     if EntryIdentifierAppender.hasIDRow(tip, extractSafeTooltipText) then return end
     tip:AddLine(extractSafeTooltipText, 1, 0.82, 0)
+    addon.AttributeTooltip(tip)
     tip:Show()
 end
 

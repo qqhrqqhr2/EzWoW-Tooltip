@@ -41,7 +41,7 @@ addon.db = {
         alwaysShowIdInfo  = true,
         fadeOut           = false,
         skinMoreFrames    = true,
-        hideIssueReport   = true,
+        hideIssueReport   = true,       -- runs only while EzWoW-ErrorCatcher is not loaded
         showGatherSkill   = true,
         headerFont        = "default",
         headerFontSize    = "default",
@@ -93,9 +93,10 @@ addon.db = {
         showSourceInfo       = true,
         showAuctionPrice     = true,
         showDualName         = true,
-        autoSellJunk         = true,
-        autoRepair           = true,
+        autoSellJunk         = true,    -- runs only while EzWoW-Bags is not loaded
+        autoRepair           = true,    -- runs only while EzWoW-Bags is not loaded
         chatLinkHover        = true,
+        showEquipCompare     = false,   -- compare with equipped gear without holding Shift (off: Shift as usual)
     },
 
     spell = {

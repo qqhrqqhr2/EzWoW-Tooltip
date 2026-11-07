@@ -15,7 +15,7 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 
 ### 개요
 
-게임 툴팁을 **어두운 카드 모양**으로 깔끔하게 바꾸고, 정보를 더 붙여 주는 애드온입니다. 플레이어에는 아이템 레벨 · 특성 · 탈것 · 이동 속도 · 대상의 대상을, NPC에는 시전 주문 · 내 위협 수준 · 생존 시간 · 드랍 수집 추적을, 아이템에는 획득처 · 수집 상태 · 보유 수량 · 경매장 시세 · 한/영 이름을 보여 줍니다. 상점에 가면 잡템 자동 판매와 자동 수리도 해 줍니다.
+게임 툴팁을 **어두운 카드 모양**으로 깔끔하게 바꾸고, 정보를 더 붙여 주는 애드온입니다. 플레이어에는 아이템 레벨 · 특성 · 탈것 · 이동 속도 · 대상의 대상을, NPC에는 시전 주문 · 내 위협 수준 · 생존 시간 · 드랍 수집 추적을, 아이템에는 획득처 · 수집 상태 · 보유 수량 · 경매장 시세 · 한/영 이름을 보여 줍니다. 약초 · 광맥에는 필요한 채집 숙련도를 표시하고, 원하면 Shift 없이도 착용 장비 비교 툴팁을 띄웁니다.
 
 ### 화면 미리보기
 
@@ -23,7 +23,7 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 
 ![설정창](docs/images/settings_ko.png)
 
-> 이미지는 애드온 코드의 크기·색상·문구로 재현한 **예시 화면**입니다. 캐릭터 · 길드 이름과 숫자는 예시입니다(3D 모델 자리에는 그림을 넣었습니다).
+> 이미지는 애드온 코드의 크기 · 색상 · 문구로 재현한 **예시 화면**입니다. 캐릭터 · 길드 이름과 숫자는 지어낸 예시입니다(3D 모델 자리에는 그림을 넣었습니다).
 
 ### 설치
 
@@ -35,17 +35,31 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 
 | 번호 | 툴팁 | 내용 |
 |---|---|---|
-| ① | 카드 스킨 · 3D 모델 | 다크 슬레이트 배경(`#12181F`), 직각/기본 테두리, 위쪽 광택, 부드럽게 사라지기, 아래쪽 체력 바(수치 표시). 테두리 색은 **플레이어 직업 / NPC 우호도 / 아이템 품질 / 퀘스트 난이도**를 따릅니다. 툴팁 옆에 3D 캐릭터·몬스터 모델을 띄울 수 있습니다. |
-| ② | 플레이어 | 칭호 · 이름 · 길드(계급) · 레벨 · 종족 · 직업 · 지역, **평균 아이템 레벨**, **특성 배분**, 탈것, 이동 속도(%), **대상의 대상**, **이 대상을 선택한 파티원**, PvP 명예 계급. 아이템 레벨과 특성은 조사 후 캐시해 둡니다. |
-| ③ | NPC | 레벨 · 정예 · 종류, **지금 시전 중인 주문**, **내 위협 수준(%)**, 대상, 생존 시간 · 위상, 드랍/퀘스트 수집 추적, NPC ID. |
-| ④ | 아이템 | **한 · 영 이름 병기**, 획득처(던전 · 보스 · 퀘스트 · 상인 · 제작 · 월드 드랍 등, 내장 `Data/SourceDB.lua`), 수집 상태(형상 · 탈것 · 도안 · 퀘스트), **가방/은행 보유 수량**, 최대 겹침(Shift), 상점 판매가, **경매장 저장 시세**(개당/묶음), 아이템 ID. |
-| ⑤ | 주문 · 오라 | 버프 · 디버프를 **건 사람(직업 색)**, 주문 ID, 아이콘. 툴팁 안의 지나치게 긴 소수점 숫자도 보기 좋게 정리합니다. |
+| ① | 카드 스킨 · 3D 모델 | 다크 슬레이트 배경(`#12181F`), 직각/기본 테두리, 위쪽 광택, 부드럽게 사라지기, 아래쪽 체력 바(수치 표시). 테두리 색은 **플레이어 직업 / NPC 우호도 / 아이템 품질 / 퀘스트 난이도**를 따릅니다. 3D 캐릭터 · 몬스터 모델은 툴팁 왼쪽 여백에 표시합니다. |
+| ② | 플레이어 | 칭호 · **이름 성** · 길드(계급) · 레벨 · 종족 · 직업 · 지역, **평균 아이템 레벨**, **특성 배분**, 탈것, 이동 속도(%), **대상의 대상**, **이 대상을 선택한 파티원**, PvP 계급. 아이템 레벨과 특성은 조사 후 캐시해 둡니다. |
+| ③ | NPC | 레벨 · 정예 · 종류, **지금 시전 중인 주문**, **내 위협 수준(%) · 탱킹 여부**, 대상, 생존 시간 · 위상, 드랍 수집 추적, NPC ID. |
+| ④ | 채집 숙련도 | 약초 · 광맥 · 가죽을 벗길 수 있는 시체 툴팁에 **필요한 숙련도와 내 숙련도**를 난이도 색(빨강 · 주황 · 노랑 · 초록 · 회색)으로 표시합니다. 배우지 않은 기술은 “미습득”. |
+| ⑤ | 아이템 · 착용 장비 비교 | **한 · 영 이름 병기**, 획득처(던전 · 보스 · 퀘스트 · 상인 · 제작 · 월드 드랍 등, 내장 `Data/SourceDB.lua`), 수집 상태(형상 · 탈것 · 도안 · 퀘스트), **가방/은행 보유 수량**, 최대 겹침(Shift), 상점 판매가, **경매장 저장 시세**(개당/묶음), 아이템 ID. **Shift 없이 착용 장비 비교** 옵션을 켜면 착용 중인 장비 툴팁이 나란히 뜹니다(기본 꺼짐). |
+| ⑥ | 재료 | 그 재료를 쓰는 제조법 수(**재료 사용처**)와 보유 수량. |
+| ⑦ | 주문 · 오라 | 버프 · 디버프를 **건 사람(직업 색)**, 주문 ID, 아이콘. 툴팁 안의 지나치게 긴 소수점 숫자도 보기 좋게 정리합니다. |
 
 #### 상점 편의
 
 - **잡템 자동 판매**: 상점을 열면 회색 아이템을 팔고 번 금액을 채팅창에 알려 줍니다.
 - **자동 수리**: 상점을 열면 모든 장비를 수리하고 비용을 알려 줍니다.
 - **경매장 시세 저장**: 경매장을 열거나 검색할 때 최저 즉시 구매가를 모아 둡니다. 설정창 버튼으로 다시 수집할 수 있습니다.
+- 상점을 열 때 **Shift**를 누르고 있으면 자동 판매 · 수리를 건너뜁니다.
+
+#### 다른 EzWoW 애드온과 함께 쓰기
+
+같은 정보가 두 번 나오지 않도록, 다음 애드온이 설치되어 있으면 해당 기능은 그 애드온이 맡습니다.
+
+| 함께 설치한 애드온 | 그쪽이 맡는 기능 | 이 애드온 |
+|---|---|---|
+| EzWoW - Bags | 잡템 자동 판매 · 자동 수리 | 설정 칸이 회색이 되고 “EzWoW - Bags에서 설정합니다”가 붙습니다. |
+| EzWoW - Error Catcher | 이슈 리포터 창 · F6 제보 문구 숨김 | 설정 칸이 회색이 되고 “EzWoW - Error Catcher에서 설정합니다”가 붙습니다. |
+| EzWoW - Best Gear Finder | 장비 툴팁의 획득처 블록(드랍 · 퀘스트 · 상인 · 제작 재료) | 그 장비에서는 이 애드온의 획득처 줄을 생략합니다. |
+| EzWoW - Profession Recipes | 재료 툴팁의 “재료 사용처”, 도안 아이템의 배움/배울 수 있음 표시 | 그 아이템에서는 이 애드온의 해당 줄을 생략합니다. |
 
 ### 설정창 (`/ezt`)
 
@@ -63,14 +77,17 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 | ④ | 3D 캐릭터 모델 · 플레이어 특성 · 플레이어 아이템 레벨 · PvP 명예 계급 | 켬 |
 | ④ | 대상의 대상 · 대상을 선택한 파티원 · 탑승 중인 탈것 · 이동 속도(%) | 켬 |
 | ④ | 시전 스킬 · 위협 수준(%) · NPC 생존시간 · 위상 · 드랍 추적 | 켬 |
-| ④ | 죽은 대상 회색 표시 · 체력 수치 표시 · 이슈 리포터 창 · F6 제보 문구 숨김 | 끔 · 켬 · 켬 |
-| ⑤ | 체력바 높이 0~16px | 8px |
-| ⑥ | 아이템·퀘스트 획득처 · 수집 상태 · 보유 수량(가방/은행) · 최대 겹침·판매가 | 켬 |
-| ⑥ | 아이템 품질색 테두리 · 퀘스트 난이도색 테두리 · 아이템·주문 아이콘 · 버프·디버프 시전자 | 켬 |
-| ⑥ | ID 항상 표시 (끄면 Shift/Alt를 누를 때만) | 켬 |
-| ⑥ | 경매장 저장 시세 표시 · [경매장 시세 갱신] 버튼 · 한글·영문 이름 병기 | 켬 |
-| ⑥ | 상점 방문 시 회색 잡템 자동 판매 · 모든 장비 자동 수리 | 켬 · 켬 |
-| ⑦ | 기본값 복원 · 후원하기 | - |
+| ④ | 죽은 대상 회색 표시 · 체력 수치 표시 | 끔 · 켬 |
+| ④ | 이슈 리포터 창 · F6 제보 문구 숨김 (EzWoW - Error Catcher가 있으면 그쪽에서 설정) | 켬 |
+| ④ | 체력바 높이 0~16px · 채집 필요 숙련도 표시 | 8px · 켬 |
+| ⑤ | 아이템 · 퀘스트 획득처 · 수집 상태 · 보유 수량(가방/은행) · 최대 겹침 · 판매가 | 켬 |
+| ⑤ | 아이템 품질색 테두리 · 퀘스트 난이도색 테두리 · 아이템 · 주문 아이콘 · 버프 · 디버프 시전자 | 켬 |
+| ⑤ | ID 항상 표시 (끄면 Shift/Alt를 누를 때만) | 켬 |
+| ⑤ | 경매장 저장 시세 표시 · [경매장 시세 갱신] 버튼 · 한글 · 영문 이름 병기 | 켬 |
+| ⑤ | 상점 방문 시 회색 잡템 자동 판매 · 모든 장비 자동 수리 (EzWoW - Bags가 있으면 그쪽에서 설정) | 켬 · 켬 |
+| ⑤ | 채팅창 링크에 마우스를 올리면 툴팁 표시 | 켬 |
+| ⑤ | Shift 없이 착용 장비 비교 툴팁 표시 (게임의 “항상 아이템 비교” 설정을 켭니다) | 끔 |
+| ⑥ | 기본값 복원 · 후원하기 | - |
 
 ### 명령어 (`/ezt`, `/et`, `/eztooltip`, `/ezwowtooltip`, `/툴팁`)
 
@@ -89,7 +106,8 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 
 ### 알아두면 좋은 점
 
-- 자동 판매 · 자동 수리는 기본으로 켜져 있습니다. 원하지 않으면 설정창에서 끄세요.
+- 자동 판매 · 자동 수리는 기본으로 켜져 있습니다. 원하지 않으면 설정창에서 끄세요(EzWoW - Bags가 있으면 그쪽 설정을 따릅니다).
+- “Shift 없이 착용 장비 비교”는 이 애드온이 켠 경우에만 끌 때 게임 설정을 되돌립니다.
 - 드롭다운 스킨 옵션은 `/reload` 후에 적용됩니다.
 
 ---
@@ -98,7 +116,7 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 
 ### Overview
 
-EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful information: item level, talents, mount, speed and target of target for players; current cast, your threat, alive time and drop tracking for NPCs; sources, collection status, owned count, AH price and Korean/English names for items. At merchants it can also sell junk and repair automatically.
+EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful information: item level, talents, mount, speed and target of target for players; current cast, your threat, alive time and drop tracking for NPCs; sources, collection status, owned count, AH price and Korean/English names for items. Herbs and ore veins show the gathering skill they need, and the equipped-gear comparison can open without holding Shift.
 
 ### Screenshots
 
@@ -106,7 +124,7 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 
 ![Settings window](docs/images/settings_en.png)
 
-> These are **mock-ups** rebuilt from the sizes, colours and strings in the code. Character/guild names and numbers are examples (a picture stands in for the 3D model).
+> These are **mock-ups** rebuilt from the sizes, colours and strings in the code. Character/guild names and numbers are made up (a picture stands in for the 3D model).
 
 ### Installation
 
@@ -118,17 +136,31 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 
 | No. | Tooltip | Contents |
 |---|---|---|
-| ① | Card skin · 3D model | Dark slate background (`#12181F`), angular/default border, top gloss, optional fade-out and a health bar with numbers. Border colour follows **class / NPC reaction / item quality / quest difficulty**. A 3D model of the unit can be shown next to the tooltip. |
-| ② | Players | Title, name, guild (rank), level, race, class, zone, **average item level**, **talent split**, mount, movement speed (%), **target of target**, **party members targeting the unit**, PvP honor rank. Item level and talents are inspected and cached. |
-| ③ | NPCs | Level, elite, type, **current cast**, **your threat (%)**, target, alive time and layer, drop/quest tracking, NPC ID. |
-| ④ | Items | **Korean/English dual name**, sources (dungeon, boss, quest, vendor, craft, world drop… from the bundled `Data/SourceDB.lua`), collection status (appearance, mount, recipe, quest), **bag/bank count**, max stack (Shift), vendor price, **saved AH price** (each/stack), item ID. |
-| ⑤ | Spells · auras | **Who cast** a buff/debuff (class-coloured), spell ID, icon. Overly long decimals inside tooltips are tidied up. |
+| ① | Card skin · 3D model | Dark slate background (`#12181F`), angular/default border, top gloss, optional fade-out and a health bar with numbers. Border colour follows **class / NPC reaction / item quality / quest difficulty**. The 3D model of the unit sits in the tooltip's left margin. |
+| ② | Players | Title, **first name and surname**, guild (rank), level, race, class, zone, **average item level**, **talent split**, mount, movement speed (%), **target of target**, **party members targeting the unit**, PvP rank. Item level and talents are inspected and cached. |
+| ③ | NPCs | Level, elite, type, **current cast**, **your threat (%) and tanking**, target, alive time and layer, drop/quest tracking, NPC ID. |
+| ④ | Gathering skill | Herbs, ore veins and skinnable corpses show the **required and your current skill** in difficulty colours (red, orange, yellow, green, grey), or “not learned”. |
+| ⑤ | Items · compare with equipped | **Korean/English dual name**, sources (dungeon, boss, quest, vendor, craft, world drop… from the bundled `Data/SourceDB.lua`), collection status (appearance, mount, recipe, quest), **bag/bank count**, max stack (Shift), vendor price, **saved AH price** (each/stack), item ID. With **Compare with equipped gear without Shift** on, the equipped item's tooltip opens next to it (off by default). |
+| ⑥ | Reagents | How many recipes use the item (**Used In**) and how many you own. |
+| ⑦ | Spells · auras | **Who cast** a buff/debuff (class-coloured), spell ID, icon. Overly long decimals inside tooltips are tidied up. |
 
 #### Merchant conveniences
 
 - **Auto-sell junk**: grey items are sold when you open a merchant, with the total in chat.
 - **Auto-repair**: all gear is repaired at merchants and the cost is reported.
 - **AH prices**: lowest buyouts are collected while you open or search the Auction House; the settings button rescans.
+- Hold **Shift** while opening a merchant to skip auto-sell and auto-repair.
+
+#### Working with other EzWoW addons
+
+So that nothing shows twice, these addons take over the matching feature when they are installed.
+
+| Installed addon | Feature it takes over | This addon |
+|---|---|---|
+| EzWoW - Bags | Auto-sell junk · auto-repair | The check boxes turn grey with “Set in EzWoW - Bags”. |
+| EzWoW - Error Catcher | Hiding the Issue Reporter and the F6 bug hint | The check box turns grey with “Set in EzWoW - Error Catcher”. |
+| EzWoW - Best Gear Finder | The source block on gear tooltips (drops, quests, vendors, crafting reagents) | Leaves out its own source lines for that item. |
+| EzWoW - Profession Recipes | “Used In” on reagents, learned / can-learn status on recipe items | Leaves out its own lines for that item. |
 
 ### Settings window (`/ezt`)
 
@@ -146,14 +178,17 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 | ④ | 3D unit model · Player talents · Player item level · PvP honor rank | On |
 | ④ | Target of target · Party members targeting unit · Current mount · Movement speed | On |
 | ④ | Casting & threat % · NPC spawn time, layer & drops | On |
-| ④ | Gray out dead units · Show health numbers · Hide Issue Reporter & F6 bug hint | Off · On · On |
-| ⑤ | HP bar height 0–16 px | 8 px |
-| ⑥ | Item & quest source · Collection status · Owned count (Bag/Bank) · Max stack & vendor price | On |
-| ⑥ | Item quality border · Quest difficulty border · Item & spell icons · Buff & debuff caster | On |
-| ⑥ | Always show IDs (off: only with Shift/Alt) | On |
-| ⑥ | Saved AH price · [Update AH Prices] button · Korean/English dual names | On |
-| ⑥ | Auto-sell grey junk · Auto-repair all gear at merchant | On · On |
-| ⑦ | Reset Defaults · Support | - |
+| ④ | Gray out dead units · Show health numbers | Off · On |
+| ④ | Hide Issue Reporter & F6 bug hint (set in EzWoW - Error Catcher when it is installed) | On |
+| ④ | HP bar height 0–16 px · Show gathering skill needed | 8 px · On |
+| ⑤ | Item & quest source · Collection status · Owned count (Bag/Bank) · Max stack & vendor price | On |
+| ⑤ | Item quality border · Quest difficulty border · Item & spell icons · Buff & debuff caster | On |
+| ⑤ | Always show IDs (off: only with Shift/Alt) | On |
+| ⑤ | Saved AH price · [Update AH Prices] button · Korean/English dual names | On |
+| ⑤ | Auto-sell grey junk · Auto-repair all gear at merchant (set in EzWoW - Bags when it is installed) | On · On |
+| ⑤ | Show tooltip when hovering chat links | On |
+| ⑤ | Compare with equipped gear without Shift (turns on the game's “always compare items” setting) | Off |
+| ⑥ | Reset Defaults · Support | - |
 
 ### Slash commands (`/ezt`, `/et`, `/eztooltip`, `/ezwowtooltip`, `/툴팁`)
 
@@ -172,7 +207,8 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 
 ### Tips
 
-- Auto-sell and auto-repair are on by default; turn them off in settings if you do not want them.
+- Auto-sell and auto-repair are on by default; turn them off in settings if you do not want them (with EzWoW - Bags installed, its settings apply).
+- Turning “Compare with equipped gear without Shift” off restores the game setting only if this addon turned it on.
 - The dropdown skin option takes effect after `/reload`.
 
 ---

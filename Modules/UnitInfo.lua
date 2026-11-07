@@ -80,20 +80,58 @@ function UnitProfileFormatter.join(parts)
     return table.concat(outputList, " ")
 end
 
+-- The tooltip's own data lines: inside instances the shown text of a unit
+-- tooltip can be locked for addons while the data it was built from is not.
+local function dataLine(tip, index)
+    if not tip.GetTooltipData then return nil end
+    local ok, data = pcall(tip.GetTooltipData, tip)
+    local line = ok and type(data) == "table" and type(data.lines) == "table" and data.lines[index]
+    if type(line) ~= "table" then return nil end
+    return line
+end
+
+local function colorOf(c, fallbackRegion)
+    if type(c) == "table" and type(c.r) == "number" and not issecret(c.r) then
+        return { c.r, c.g, c.b, c.a or 1 }
+    end
+    return fallbackRegion and { fallbackRegion:GetTextColor() } or { 1, 1, 1, 1 }
+end
+
 function UnitProfileFormatter.extractLines(tip)
     local lineList = {}
     for index = 1, tip:NumLines() do
         local left, right = lineRegions(tip, index)
         if not left then return end
         local leftText = left:GetText()
-        if issecret(leftText) then return end 
-        local entry = { left = leftText, leftColor = { left:GetTextColor() } }
+        local entry
+        if issecret(leftText) then
+            local line = dataLine(tip, index)
+            local text = line and line.leftText
+            if type(text) == "string" and not issecret(text) then
+                entry = { left = text, leftColor = colorOf(line.leftColor, left) }
+            elseif index == 1 then
+                return -- no name line: nothing to build on
+            else
+                -- an unreadable line is left out of the rebuilt card
+                entry = { left = "", leftColor = { 1, 1, 1, 1 }, unreadable = true }
+            end
+        else
+            entry = { left = leftText, leftColor = { left:GetTextColor() } }
+        end
         if right and right:IsShown() then
             local rightText = right:GetText()
-            if issecret(rightText) then return end
+            if issecret(rightText) then
+                local line = dataLine(tip, index)
+                rightText = line and line.rightText
+                if rightText ~= nil and (type(rightText) ~= "string" or issecret(rightText)) then rightText = nil end
+                entry.rightColor = colorOf(line and line.rightColor, right)
+            else
+                entry.rightColor = { right:GetTextColor() }
+            end
             entry.right = rightText
-            entry.rightColor = { right:GetTextColor() }
         end
+        -- the attribution line is not unit data: leave it out of the rebuilt card
+        if index > 1 and addon.IsAttributionText(entry.right) then entry.unreadable = true end
         lineList[index] = entry
     end
     return lineList
@@ -549,7 +587,7 @@ function addon:PopulateUnitTooltipCard(tip, unit)
     local rowWidgets = info.isPlayer and UnitProfileFormatter.playerRows(info, lineList, levelIdx) or UnitProfileFormatter.npcRows(info, lineList, levelIdx)
     local kept = {}
     for index = 2, #lineList do
-        if not drop[index] then kept[#kept + 1] = lineList[index] end
+        if not drop[index] and not lineList[index].unreadable then kept[#kept + 1] = lineList[index] end
     end
 
     UnitProfileFormatter.writeLines(tip, rowWidgets, kept, info.dead and cfg.grayForDead)
@@ -566,6 +604,7 @@ function addon:InsertOrUpdateTooltipLine(tip, pattern, text)
     if existing then
         existing:SetText(text)
         existing:Show()
+        addon.AttributeTooltip(tip)
         return existing
     end
     local first = (tooltipUnitRows[tip] or 1) + 1
@@ -577,10 +616,12 @@ function addon:InsertOrUpdateTooltipLine(tip, pattern, text)
             left:SetText(text)
             left:Show()
             if right then right:SetText(nil); right:Hide() end
+            addon.AttributeTooltip(tip)
             return left
         end
     end
     tip:AddLine(text)
+    addon.AttributeTooltip(tip)
 end
 
 function addon:StripMatchingTooltipLine(tip, pattern)
@@ -603,6 +644,7 @@ platformHelper.AddTooltipPostCall("Unit", "OnTooltipSetUnit", function(tip, data
     if not tip or not tooltipCards[tip] or (tip.IsForbidden and tip:IsForbidden()) then return end
     tooltipUnitRows[tip] = nil
     local _, unit = platformHelper.GetTooltipUnit(tip, data)
+    if unit and addon.ReadableUnit then unit = addon:ReadableUnit(unit, data) end
     if not unit or addon:IsUnitRestricted(unit) then return end
     local debug = addon.debugNextUnit and tip == GameTooltip
     if debug then

@@ -257,9 +257,52 @@ function PlatformBridge.GetTooltipSpell(tipFrame, tooltipData)
     return nil
 end
 
+-- A unit token we build ourselves ("player", "partyN", "raidN", "target",
+-- "focus") for a GUID. On group frames inside instances the tooltip's own token
+-- (GetUnit / UnitTokenFromGUID) can come back locked while the GUID is readable;
+-- a token built here never is.
+local function readableGUID(unit)
+    local ok, guid = pcall(UnitGUID, unit)
+    if ok and guid and not PlatformBridge.issecret(guid) then return guid end
+    return nil
+end
+
+function PlatformBridge.CleanTokenForGUID(guid)
+    if not guid or PlatformBridge.issecret(guid) then return nil end
+    if readableGUID("player") == guid then return "player" end
+    if _G.IsInRaid and _G.IsInRaid() then
+        local count = (_G.GetNumGroupMembers and _G.GetNumGroupMembers()) or 0
+        if PlatformBridge.issecret(count) then count = 40 end
+        for i = 1, math.min(count, 40) do
+            if readableGUID("raid" .. i) == guid then return "raid" .. i end
+        end
+    else
+        for i = 1, 4 do
+            if readableGUID("party" .. i) == guid then return "party" .. i end
+        end
+    end
+    for _, unit in ipairs({ "target", "focus", "mouseover", "pet" }) do
+        if readableGUID(unit) == guid then return unit end
+    end
+    return nil
+end
+
 function PlatformBridge.GetTooltipUnit(tipFrame, tooltipData)
     local isCallOk, unitName, unitToken = callTooltipMethod(tipFrame, "GetUnit")
     unitToken = isCallOk and PlatformBridge.nosecret(unitToken) or nil
+    -- The tooltip data's GUID is the authoritative identity. Rebuild a clean token
+    -- for it first; the reported token is only used when it maps to the same GUID.
+    do
+        local unitData = resolveTooltipData(tipFrame, tooltipData, "Unit")
+        local dataGUID = unitData and PlatformBridge.nosecret(unitData.guid)
+        if dataGUID then
+            if unitToken and readableGUID(unitToken) == dataGUID and unitToken ~= "mouseover" then
+                return unitName, unitToken
+            end
+            local clean = PlatformBridge.CleanTokenForGUID(dataGUID)
+            if clean then return unitName, clean end
+        end
+    end
     -- The tooltip data names the unit the tooltip was built for by GUID; a world
     -- unit's token is "mouseover", which may already point at another unit.
     if (not unitToken or unitToken == "mouseover") and type(_G.UnitTokenFromGUID) == "function" then

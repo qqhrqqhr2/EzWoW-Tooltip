@@ -27,6 +27,7 @@ function addon:InsertOrUpdateTooltipLine(tip, prefixPattern, fullText)
         if nosecret(existing:GetText()) ~= fullText then
             existing:SetText(fullText)
             existing:Show()
+            addon.AttributeTooltip(tip)
             return existing, true
         end
         return existing, false
@@ -46,11 +47,13 @@ function addon:InsertOrUpdateTooltipLine(tip, prefixPattern, fullText)
                     right:SetText(nil)
                     right:Hide()
                 end
+                addon.AttributeTooltip(tip)
                 return left, true
             end
         end
     end
     tip:AddLine(fullText)
+    addon.AttributeTooltip(tip)
     return nil, true
 end
 
@@ -137,7 +140,8 @@ function addon.SanitizeUnitTooltipTextLines(tip)
         local lText = left and nosecret(left:GetText())
         local rText = right and right:IsShown() and nosecret(right:GetText())
 
-        if lText and lText ~= "" then
+        -- the attribution line (" " | addon name) stays as it is
+        if lText and lText ~= "" and not addon.IsAttributionText(rText) then
             local plainL = DropSourceInspector.cleanColors(lText)
             local plainR = rText and DropSourceInspector.cleanColors(rText) or nil
 

@@ -267,6 +267,7 @@ function TalentTreeInspector.composeTreeSummary(class, pts1, pts2, pts3, customN
         primary = 3
     end
     local tName = (customNames and customNames[primary]) or select(1, TalentTreeInspector.resolveTreeInfo(class, primary)) or ""
+    TalentTreeInspector.lastPrimaryName = tName ~= "" and tName or nil
     local tIcon = (customIcons and customIcons[primary]) or select(2, TalentTreeInspector.resolveTreeInfo(class, primary))
     return format("%s|cffEDF4F7%s|r |cffAEE26A(%d/%d/%d)|r", TalentTreeInspector.composeIcon(tIcon), tName, pts1, pts2, pts3), true
 end
@@ -446,6 +447,16 @@ function TalentTreeInspector.extractSingleTraitConfig(configID, class, isInspect
         return TalentTreeInspector.composeTreeSummary(class, pts[1], pts[2], pts[3])
     end
     return nil
+end
+
+-- For other EzWoW addons: the name of the player's main talent tree ("Feral"),
+-- or nil when no points are spent or the tree can't be read.
+function addon.GetPlayerTalentTreeName()
+    local _, class = UnitClass("player")
+    TalentTreeInspector.lastPrimaryName = nil
+    local ok = pcall(TalentTreeInspector.extractTraitsTalentTree, class, false)
+    if not ok then return nil end
+    return TalentTreeInspector.lastPrimaryName
 end
 
 function TalentTreeInspector.extractTraitsTalentTree(class, isInspect)
@@ -702,6 +713,7 @@ function TalentTreeInspector.commitTalentLineToTooltip(tip, extractSafeTooltipTe
         else
             tip:AddLine(fullText)
         end
+        addon.AttributeTooltip(tip)
     end
 end
 

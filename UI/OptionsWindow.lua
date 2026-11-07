@@ -115,7 +115,7 @@ local L_EN = {
     resetDone       = "Settings restored to defaults.",
     donate          = "Support · Copy Link",
     copyTitle       = "Support Link · Ctrl + C to copy",
-    hint            = "EzWoW - Tooltip 0.2.0  ·  Open settings: /ezt  ·  Drag header to move",
+    hint            = "EzWoW - Tooltip  ·  Open settings: /ezt  ·  Drag header to move",
     panelDesc       = "Customizes character, NPC, item, spell, and quest tooltips and displays useful info such as target, talents, sources, collection status, and AH prices.",
     panelOpen       = "Settings (/ezt)",
     panelHint       = "Type /ezt, /eztooltip or /ezwowtooltip in chat at any time.",
@@ -195,7 +195,7 @@ local LOCALES = {
         resetDone       = "설정을 기본값으로 복원했습니다.",
         donate          = "후원하기 · 링크 복사",
         copyTitle       = "후원 주소 · Ctrl + C 로 복사",
-        hint            = "EzWoW - Tooltip 0.2.0  ·  설정 열기: /ezt  ·  상단 제목을 드래그해 창 이동",
+        hint            = "EzWoW - Tooltip  ·  설정 열기: /ezt  ·  상단 제목을 드래그해 창 이동",
         panelDesc       = "캐릭터·NPC·아이템·주문·퀘스트 툴팁의 외형을 깔끔하게 다듬고 대상, 특성, 획득처, 수집 상태, 경매장 시세 등 유용한 정보를 함께 표시합니다.",
         panelOpen       = "설정 (/ezt)",
         panelHint       = "채팅창에 /ezt, /eztooltip 또는 /ezwowtooltip을 입력해도 열립니다.",
@@ -271,7 +271,7 @@ local LOCALES = {
         resetDone       = "Einstellungen zurückgesetzt.",
         donate          = "Unterstützen · Link",
         copyTitle       = "Unterstützungslink · Strg + C zum Kopieren",
-        hint            = "EzWoW - Tooltip 0.2.0  ·  Einstellungen: /ezt",
+        hint            = "EzWoW - Tooltip  ·  Einstellungen: /ezt",
         panelDesc       = "Passt Tooltips für Spieler, NSCs, Gegenstände, Zauber und Quests an und zeigt nützliche Infos wie Ziel, Talente, Symbole und IDs.",
         panelOpen       = "Einstellungen (/ezt)",
         panelHint       = "Jederzeit im Chat mit /ezt, /eztooltip oder /ezwowtooltip aufrufbar.",
@@ -346,7 +346,7 @@ local LOCALES = {
         resetDone       = "Paramètres par défaut restaurés.",
         donate          = "Soutenir · Copier lien",
         copyTitle       = "Lien de soutien · Ctrl + C pour copier",
-        hint            = "EzWoW - Tooltip 0.2.0  ·  Ouvrir : /ezt",
+        hint            = "EzWoW - Tooltip  ·  Ouvrir : /ezt",
         panelDesc       = "Personnalise les infobulles des joueurs, PNJ, objets, sorts et quêtes et affiche des infos utiles (cible, talents, icônes, ID).",
         panelOpen       = "Options (/ezt)",
         panelHint       = "Tapez /ezt, /eztooltip ou /ezwowtooltip dans le chat.",
@@ -421,7 +421,7 @@ local LOCALES = {
         resetDone       = "Ajustes restablecidos por defecto.",
         donate          = "Apoyar · Copiar enlace",
         copyTitle       = "Enlace de apoyo · Ctrl + C para copiar",
-        hint            = "EzWoW - Tooltip 0.2.0  ·  Abrir: /ezt",
+        hint            = "EzWoW - Tooltip  ·  Abrir: /ezt",
         panelDesc       = "Personaliza las descripciones de jugadores, PNJ, objetos, hechizos y misiones mostrando información útil (objetivo, talentos, iconos, ID).",
         panelOpen       = "Opciones (/ezt)",
         panelHint       = "Escribe /ezt, /eztooltip o /ezwowtooltip en el chat.",
@@ -496,7 +496,7 @@ local LOCALES = {
         resetDone       = "Настройки сброшены по умолчанию.",
         donate          = "Поддержать · Ссылка",
         copyTitle       = "Ссылка поддержки · Ctrl + C для копирования",
-        hint            = "EzWoW - Tooltip 0.2.0  ·  Открыть: /ezt",
+        hint            = "EzWoW - Tooltip  ·  Открыть: /ezt",
         panelDesc       = "Настраивает подсказки для игроков, НИП, предметов, заклинаний и заданий, отображая цель, таланты, значки и ID.",
         panelOpen       = "Настройки (/ezt)",
         panelHint       = "Введите /ezt, /eztooltip или /ezwowtooltip в чате.",
@@ -571,7 +571,7 @@ local LOCALES = {
         resetDone       = "已恢复默认设置。",
         donate          = "赞助支持 · 复制链接",
         copyTitle       = "赞助链接 · 按 Ctrl + C 复制",
-        hint            = "EzWoW - Tooltip 0.2.0  ·  打开设置：/ezt",
+        hint            = "EzWoW - Tooltip  ·  打开设置：/ezt",
         panelDesc       = "美化角色、NPC、物品、法术与任务鼠标提示，并显示目标、天赋、图标与ID等实用信息。",
         panelOpen       = "设置 (/ezt)",
         panelHint       = "随时在聊天框输入 /ezt, /eztooltip 或 /ezwowtooltip 打开设置。",
@@ -646,7 +646,7 @@ local LOCALES = {
         resetDone       = "已恢復預設設定。",
         donate          = "贊助支持 · 複製連結",
         copyTitle       = "贊助連結 · 按 Ctrl + C 複製",
-        hint            = "EzWoW - Tooltip 0.2.0  ·  打開設定：/ezt",
+        hint            = "EzWoW - Tooltip  ·  打開設定：/ezt",
         panelDesc       = "美化角色、NPC、物品、法術與任務滑鼠提示，並顯示目標、天賦、圖示與ID等實用資訊。",
         panelOpen       = "設定 (/ezt)",
         panelHint       = "隨時在聊天框輸入 /ezt, /eztooltip 或 /ezwowtooltip 打開設定。",
@@ -671,6 +671,26 @@ LOCALES.esES.showGatherSkill = "Habilidad de recolección necesaria"
 LOCALES.ruRU.showGatherSkill = "Требуемый навык сбора"
 LOCALES.zhCN.showGatherSkill = "显示所需采集技能"
 LOCALES.zhTW.showGatherSkill = "顯示所需採集技能"
+
+-- Options that now belong to another EzWoW addon.
+L_EN.managedBy = "Set in %s"
+LOCALES.koKR.managedBy = "%s에서 설정합니다"
+LOCALES.deDE.managedBy = "Wird in %s eingestellt"
+LOCALES.frFR.managedBy = "Se règle dans %s"
+LOCALES.esES.managedBy = "Se configura en %s"
+LOCALES.ruRU.managedBy = "Настраивается в %s"
+LOCALES.zhCN.managedBy = "在 %s 中设置"
+LOCALES.zhTW.managedBy = "在 %s 中設定"
+
+-- Equipment comparison without Shift.
+L_EN.showEquipCompare = "Compare with equipped gear without Shift"
+LOCALES.koKR.showEquipCompare = "Shift 없이 착용 장비 비교 툴팁 표시"
+LOCALES.deDE.showEquipCompare = "Ausrüstung ohne Umschalt vergleichen"
+LOCALES.frFR.showEquipCompare = "Comparer l'équipement sans Maj"
+LOCALES.esES.showEquipCompare = "Comparar equipo sin Mayús"
+LOCALES.ruRU.showEquipCompare = "Сравнение с надетым без Shift"
+LOCALES.zhCN.showEquipCompare = "无需 Shift 即比较已装备物品"
+LOCALES.zhTW.showEquipCompare = "無需 Shift 即比較已裝備物品"
 
 local OPTION_TIPS_KO = {
     mask            = "툴팁 상단에 은은한 밝기 그라데이션(광택) 효과를 표시합니다.",
@@ -708,6 +728,7 @@ local OPTION_TIPS_KO = {
     showDualName    = "아이템, 주문, 퀘스트, NPC 툴팁의 제목과 획득처·재료 목록에 한글 이름과 영문 이름을 함께 표시합니다.",
     autoSellJunk    = "상점 창을 열었을 때 가방에 있는 회색(하급) 잡템을 자동으로 판매하고 획득 금액을 안내합니다. (Shift를 누른 채 상점을 열면 건너뜀)",
     autoRepair      = "수리 가능한 상인을 열었을 때 착용 및 가방의 모든 장비를 자동으로 수리합니다. (Shift를 누른 채 상점을 열면 건너뜀)",
+    showEquipCompare = "아이템에 마우스를 올리면 Shift 키를 누르지 않아도 현재 착용 중인 장비와 비교하는 툴팁을 나란히 표시합니다. (게임의 '항상 아이템 비교' 설정을 켭니다)",
     chatLinkHover   = "채팅창에 올라온 아이템·주문·퀘스트·업적 링크에 마우스를 올리기만 해도 툴팁을 보여 줍니다. 클릭하지 않아도 됩니다.",
     showGatherSkill = "약초·광맥 툴팁과 가죽을 벗길 수 있는 시체 툴팁에 필요한 숙련도와 현재 숙련도를 난이도 색(빨강·주황·노랑·초록·회색)으로 표시합니다.",
 }
@@ -748,6 +769,7 @@ local OPTION_TIPS_EN = {
     showDualName    = "Displays both Korean and English names side-by-side on item, spell, quest, and NPC tooltips.",
     autoSellJunk    = "Automatically sells all poor-quality (grey) items in your bags when visiting a merchant (hold Shift while opening to skip).",
     autoRepair      = "Automatically repairs all damaged equipment when visiting a repair-capable merchant (hold Shift while opening to skip).",
+    showEquipCompare = "Shows the comparison with your equipped gear next to item tooltips without holding Shift (turns on the game's 'always compare items' setting).",
     chatLinkHover   = "Shows the tooltip for item, spell, quest, and achievement links in chat as soon as you hover them, without clicking.",
     showGatherSkill = "Shows the required and your current skill on herb, ore and skinnable corpse tooltips, in difficulty colours (red, orange, yellow, green, grey).",
 }
@@ -766,6 +788,16 @@ end
 function SettingsDialog.resolveOptionsLocaleText(key)
     local targetTable = LOCALES[SettingsDialog.resolveCurrentLangCode()] or L_EN
     return targetTable[key] or L_EN[key] or key
+end
+
+-- Options moved to another EzWoW addon: "Set in <title>" while that addon is loaded.
+local OWNER_TITLES = {
+    ["EzWoW-Bags"] = "EzWoW - Bags",
+    ["EzWoW-ErrorCatcher"] = "EzWoW - Error Catcher",
+}
+function SettingsDialog.resolveOwnerNote(ownerAddon)
+    if not ownerAddon or not addon.IsOtherAddOnLoaded(ownerAddon) then return nil end
+    return string.format(SettingsDialog.resolveOptionsLocaleText("managedBy"), OWNER_TITLES[ownerAddon] or ownerAddon)
 end
 
 function SettingsDialog.syncTooltipLocale()
@@ -1060,12 +1092,17 @@ function SettingsDialog.resetAllToDefaults()
     local keepAhPrices = EzWoW_TooltipDB and EzWoW_TooltipDB.auctionPrices
     local keepAhTimes  = EzWoW_TooltipDB and EzWoW_TooltipDB.auctionTimes
     local keepAhLast   = EzWoW_TooltipDB and EzWoW_TooltipDB.auctionLastScan
+    -- one-time settings moves and "who turned the compare setting on" survive a reset
+    local keepMigrated = EzWoW_TooltipDB and EzWoW_TooltipDB.migratedEquipCompare
+    local keepCompareSet = EzWoW_TooltipDB and EzWoW_TooltipDB.equipCompareCVarSet
     local fresh = addon.DeepCopy(addon.defaultDB)
     fresh.general.language = keepLang
     EzWoW_TooltipDB = addon.DeepCopy(fresh)
     if type(keepAhPrices) == "table" then EzWoW_TooltipDB.auctionPrices = keepAhPrices end
     if type(keepAhTimes) == "table" then EzWoW_TooltipDB.auctionTimes = keepAhTimes end
     if keepAhLast then EzWoW_TooltipDB.auctionLastScan = keepAhLast end
+    EzWoW_TooltipDB.migratedEquipCompare = keepMigrated
+    EzWoW_TooltipDB.equipCompareCVarSet = keepCompareSet
     EzWoW_TooltipPerCharDB = addon.DeepCopy(fresh)
     EzWoW_TooltipDB = EzWoW_TooltipDB
     EzWoW_TooltipPerCharDB = EzWoW_TooltipPerCharDB
@@ -1089,7 +1126,7 @@ function SettingsDialog.launchConfigWindow()
     end
 
     configFrame = CreateFrame("Frame", "EzWoWTooltipConfig", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
-    configFrame:SetSize(830, 636)
+    configFrame:SetSize(830, 660)
     configFrame:SetPoint("CENTER")
     configFrame:SetFrameStrata("FULLSCREEN_DIALOG")
     configFrame:SetToplevel(true)
@@ -1233,10 +1270,13 @@ function SettingsDialog.launchConfigWindow()
 
     local allChecks = {}
 
-    local function createStyledCheckbox(coordX, coordY, maxW, localeKey, readOptionValue, writeOptionValue)
+    -- ownerAddon: the option now belongs to that EzWoW addon; while it is loaded the box is
+    -- disabled, shows the owner's value (ownerRead) and says where to change it.
+    local function createStyledCheckbox(coordX, coordY, maxW, localeKey, readOptionValue, writeOptionValue, ownerAddon, ownerRead)
         local themeColor = CreateFrame("CheckButton", nil, configFrame, "UICheckButtonTemplate")
         themeColor:SetSize(24, 24)
         themeColor:SetPoint("TOPLEFT", coordX, coordY)
+        if themeColor.SetMotionScriptsWhileDisabled then themeColor:SetMotionScriptsWhileDisabled(true) end
         local resolvedValue = configFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         resolvedValue:SetPoint("LEFT", themeColor, "RIGHT", 4, 0)
         resolvedValue:SetWidth(maxW)
@@ -1257,11 +1297,13 @@ function SettingsDialog.launchConfigWindow()
                 GameTooltip:ClearLines()
                 GameTooltip:AddLine(SettingsDialog.resolveOptionsLocaleText(localeKey), 0.682, 0.886, 0.416)
                 GameTooltip:AddLine(tipDesc, 0.929, 0.957, 0.969, true)
+                local ownerNote = SettingsDialog.resolveOwnerNote(ownerAddon)
+                if ownerNote then GameTooltip:AddLine(ownerNote, 0.906, 0.486, 0.439, true) end
                 GameTooltip:Show()
             end
         end)
-        themeColor:SetScript("OnLeave", function()
-            resolvedValue:SetTextColor(unpack(Theme.text))
+        themeColor:SetScript("OnLeave", function(self)
+            resolvedValue:SetTextColor(unpack(self:IsEnabled() and Theme.text or Theme.muted))
             GameTooltip:Hide()
         end)
         allChecks[#allChecks + 1] = {
@@ -1270,6 +1312,8 @@ function SettingsDialog.launchConfigWindow()
             maxW = maxW - 2,
             localeKey = localeKey,
             readValue = readOptionValue,
+            ownerAddon = ownerAddon,
+            ownerRead = ownerRead,
         }
         return themeColor, resolvedValue
     end
@@ -1546,6 +1590,11 @@ function SettingsDialog.launchConfigWindow()
         function(entryValue)
             addon.db.general.hideIssueReport = entryValue
             if addon.UpdateIssueReportState then addon:UpdateIssueReportState() end
+        end,
+        "EzWoW-ErrorCatcher",
+        function()
+            local ec = _G.EzWoW_ErrorCatcher
+            return type(ec) == "table" and type(ec.db) == "table" and ec.db.hideIssueReport ~= false or nil
         end)
 
     local hpHeightLabel, hpHeightVal = createValueStepper(430, -326,
@@ -1613,22 +1662,39 @@ function SettingsDialog.launchConfigWindow()
         function() return addon.db.item.showDualName ~= false end,
         function(entryValue) addon.db.item.showDualName = entryValue end)
 
+    -- auto-sell / auto-repair now belong to EzWoW-Bags; these only apply while it is not loaded
+    local function bagsSetting(key)
+        return function()
+            local bags = _G.EzWoW_Bags
+            if type(bags) ~= "table" or type(bags.cfg) ~= "table" then return nil end
+            return bags.cfg[key] ~= false
+        end
+    end
     createStyledCheckbox(20, -522, 228, "autoSellJunk",
         function() return addon.db.item.autoSellJunk ~= false end,
-        function(entryValue) addon.db.item.autoSellJunk = entryValue end)
+        function(entryValue) addon.db.item.autoSellJunk = entryValue end,
+        "EzWoW-Bags", bagsSetting("autoSellJunk"))
     createStyledCheckbox(286, -522, 228, "autoRepair",
         function() return addon.db.item.autoRepair ~= false end,
-        function(entryValue) addon.db.item.autoRepair = entryValue end)
+        function(entryValue) addon.db.item.autoRepair = entryValue end,
+        "EzWoW-Bags", bagsSetting("autoRepair"))
     createStyledCheckbox(552, -522, 228, "chatLinkHover",
         function() return addon.db.item.chatLinkHover ~= false end,
         function(entryValue) addon.db.item.chatLinkHover = entryValue end)
 
-    local resetBtn, resetText = createStyledButton(195, -564, 210, 30, false, function()
+    createStyledCheckbox(20, -548, 360, "showEquipCompare",
+        function() return addon.db.item.showEquipCompare ~= false end,
+        function(entryValue)
+            addon.db.item.showEquipCompare = entryValue
+            if addon.SyncEquipCompare then addon.SyncEquipCompare() end
+        end)
+
+    local resetBtn, resetText = createStyledButton(195, -588, 210, 30, false, function()
         SettingsDialog.resetAllToDefaults()
     end)
 
     local copyBox
-    local donateBtn, donateText = createStyledButton(425, -564, 210, 30, true, function()
+    local donateBtn, donateText = createStyledButton(425, -588, 210, 30, true, function()
         if not copyBox then
             copyBox = CreateFrame("Frame", "EzWoWTooltipDonate", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
             copyBox:SetSize(390, 116)
@@ -1763,8 +1829,23 @@ function SettingsDialog.launchConfigWindow()
         SettingsDialog.fitFontStringToWidth(hintText, SettingsDialog.resolveOptionsLocaleText("hint"), 780, 10, 8)
 
         for _, item in ipairs(allChecks) do
-            SettingsDialog.fitFontStringToWidth(item.txt, SettingsDialog.resolveOptionsLocaleText(item.localeKey), item.maxW, 12, 9)
-            item.chk:SetChecked(item.readValue() and true or false)
+            local labelText = SettingsDialog.resolveOptionsLocaleText(item.localeKey)
+            local ownerNote = SettingsDialog.resolveOwnerNote(item.ownerAddon)
+            local value = item.readValue()
+            if ownerNote then
+                labelText = labelText .. "  |cff8398A6(" .. ownerNote .. ")|r"
+                if item.ownerRead then
+                    local ok, ownerValue = pcall(item.ownerRead)
+                    if ok and ownerValue ~= nil then value = ownerValue end
+                end
+                item.chk:Disable()
+                item.txt:SetTextColor(unpack(Theme.muted))
+            else
+                item.chk:Enable()
+                item.txt:SetTextColor(unpack(Theme.text))
+            end
+            SettingsDialog.fitFontStringToWidth(item.txt, labelText, item.maxW, 12, 9)
+            item.chk:SetChecked(value and true or false)
         end
 
         if BlizzardOptionsCanvas and BlizzardOptionsCanvas.updateText then

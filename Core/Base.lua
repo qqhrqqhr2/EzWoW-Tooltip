@@ -3,6 +3,71 @@
 -- Core/Base.lua : Core Tooltip Registry, Class/Race Badges, Color Engine & Line Helpers
 --===========================================================================
 local addonName, ns = ...
+
+-- The "EzWoW - ..." name line at the end of tooltip additions is drawn small.
+-- Shared by the EzWoW addons: the first one loaded sets it up.
+if not (_G.EzWoWTooltipTagSizer and _G.EzWoWTooltipTagSizer.version == 3) then
+    local sizer = {}
+    sizer.version = 3
+    _G.EzWoWTooltipTagSizer = sizer
+    local smallFont
+    local original = setmetatable({}, { __mode = "k" })   -- font string -> its own font object
+    local function tagFont()
+        if not smallFont and CreateFont then
+            smallFont = _G.EzWoWTooltipTagFont or CreateFont("EzWoWTooltipTagFont")
+            smallFont:CopyFontObject(GameTooltipTextSmall or GameTooltipText)
+            local path, _, flags = smallFont:GetFont()
+            if path then smallFont:SetFont(path, 8, flags) end
+        end
+        return smallFont
+    end
+    local function isTag(text)
+        if type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then return false end
+        return text:find("^EzWoW %- ") ~= nil
+    end
+    local function fit(fs, tag)
+        if not fs then return end
+        if tag then
+            if not original[fs] then original[fs] = fs:GetFontObject() or GameTooltipText end
+            if tagFont() then fs:SetFontObject(smallFont) end
+            fs:SetTextColor(0.5, 0.5, 0.5)
+        elseif original[fs] then
+            fs:SetFontObject(original[fs])
+            original[fs] = nil
+        end
+    end
+    function sizer.Refit(tip)
+        local name = tip and tip.GetName and tip:GetName()
+        if type(name) ~= "string" then return end
+        local ok, count = pcall(tip.NumLines, tip)
+        if not ok or type(count) ~= "number" or (issecretvalue and issecretvalue(count)) then return end
+        for i = 1, count do
+            local right = _G[name .. "TextRight" .. i]
+            if right then fit(right, isTag(right:GetText())) end
+            -- line 1 is the tooltip's title: a left "EzWoW - ..." there stays big
+            local left = _G[name .. "TextLeft" .. i]
+            if left then fit(left, i > 1 and isTag(left:GetText())) end
+        end
+    end
+    local function restore(tip)
+        local name = tip and tip.GetName and tip:GetName()
+        if type(name) ~= "string" then return end
+        local rightPrefix, leftPrefix = name .. "TextRight", name .. "TextLeft"
+        for fs, font in pairs(original) do
+            local fsName = fs.GetName and fs:GetName()
+            if type(fsName) == "string" and (fsName:find(rightPrefix, 1, true) == 1 or fsName:find(leftPrefix, 1, true) == 1) then
+                fs:SetFontObject(font)
+                original[fs] = nil
+            end
+        end
+    end
+    for _, tip in ipairs({ GameTooltip, ItemRefTooltip, ShoppingTooltip1, ShoppingTooltip2 }) do
+        if tip then
+            pcall(hooksecurefunc, tip, "Show", function(self) pcall(sizer.Refit, self) end)
+            pcall(tip.HookScript, tip, "OnTooltipCleared", function(self) pcall(restore, self) end)
+        end
+    end
+end
 local type, pairs, ipairs, tonumber, tostring, select, pcall = type, pairs, ipairs, tonumber, tostring, select, pcall
 
 local TooltipEngine = ns.TooltipEngine or {}
@@ -57,6 +122,16 @@ local DEFAULT_TOOLTIP_NAMES = {
 }
 for _, globalName in ipairs(DEFAULT_TOOLTIP_NAMES) do
     TooltipEngine.TrackTooltip(_G[globalName])
+end
+
+-- Some features now belong to another EzWoW addon. While that addon is loaded it runs the
+-- feature and this one stays out of the way. Ask at event time, not at file load: an addon
+-- that loads after this one is not reported as loaded yet.
+function TooltipEngine.IsOtherAddOnLoaded(name)
+    local isLoaded = (C_AddOns and C_AddOns.IsAddOnLoaded) or _G.IsAddOnLoaded
+    if type(isLoaded) ~= "function" or type(name) ~= "string" then return false end
+    local ok, loadedOrLoading, loaded = pcall(isLoaded, name)
+    return ok and (loadedOrLoading or loaded) and true or false
 end
 
 -- Tooltip post-calls fire for every tooltip, including hidden scanning
@@ -224,6 +299,145 @@ function TooltipEngine:GetLine(tipFrame, targetRow)
         tipFrame:AddLine(" ")
     end
     return TooltipEngine.LineRegions(tipFrame, targetRow)
+end
+
+-- Attribution line: every block of lines this addon adds to a game tooltip ends
+-- with one muted, right-aligned line naming the addon. Added once per tooltip
+-- display and kept as the last line with content: when more of our lines arrive
+-- below it later, those rows move up one place (text and color only; anchors
+-- and the vertical layout stay with the client).
+TooltipEngine.ATTRIBUTION_TEXT = "EzWoW - Tooltip"
+local ATTRIBUTION_R, ATTRIBUTION_G, ATTRIBUTION_B = 0.5, 0.5, 0.5
+local attributedTooltips = PlatformBridge.weakTable()     -- tooltip -> carries the line this display
+local attributionClearHooked = PlatformBridge.weakTable() -- tooltip -> OnTooltipCleared hooked
+local unpackValues = unpack or table.unpack
+
+function TooltipEngine.IsAttributionText(text)
+    if text == nil or PlatformBridge.issecret(text) then return false end
+    return text == TooltipEngine.ATTRIBUTION_TEXT
+end
+
+local function attributionRegions(tipFrame, tipName, lineIdx)
+    return _G[tipName .. "TextLeft" .. lineIdx], _G[tipName .. "TextRight" .. lineIdx]
+end
+
+local function isFilledText(text)
+    return type(text) == "string" and text ~= "" and text ~= " "
+end
+
+-- Plain copy of one line, or nil when any part of it is secret.
+local function snapshotLine(tipFrame, tipName, lineIdx)
+    local leftRegion, rightRegion = attributionRegions(tipFrame, tipName, lineIdx)
+    if not leftRegion then return nil end
+    local leftText = leftRegion:GetText()
+    local lr, lg, lb, la = leftRegion:GetTextColor()
+    if PlatformBridge.anysecret(leftText, lr, lg, lb, la) then return nil end
+    local lineCopy = { leftText = leftText, leftColor = { lr or 1, lg or 1, lb or 1, la or 1 }, leftShown = leftRegion:IsShown() }
+    if leftRegion.GetWordWrap then lineCopy.leftWrap = leftRegion:GetWordWrap() end
+    if rightRegion then
+        local rightText = rightRegion:GetText()
+        local rr, rg, rb, ra = rightRegion:GetTextColor()
+        if PlatformBridge.anysecret(rightText, rr, rg, rb, ra) then return nil end
+        lineCopy.rightText = rightText
+        lineCopy.rightColor = { rr or 1, rg or 1, rb or 1, ra or 1 }
+        lineCopy.rightShown = rightRegion:IsShown()
+    end
+    lineCopy.filled = (lineCopy.leftShown and isFilledText(leftText))
+        or (lineCopy.rightShown and isFilledText(lineCopy.rightText)) or false
+    return lineCopy
+end
+
+local function writeLine(tipFrame, tipName, lineIdx, lineCopy)
+    local leftRegion, rightRegion = attributionRegions(tipFrame, tipName, lineIdx)
+    if not leftRegion then return end
+    leftRegion:SetText(lineCopy.leftText)
+    leftRegion:SetTextColor(unpackValues(lineCopy.leftColor))
+    if lineCopy.leftWrap ~= nil and leftRegion.SetWordWrap then leftRegion:SetWordWrap(lineCopy.leftWrap) end
+    if lineCopy.leftShown then leftRegion:Show() else leftRegion:Hide() end
+    if rightRegion then
+        rightRegion:SetText(lineCopy.rightText)
+        if lineCopy.rightColor then rightRegion:SetTextColor(unpackValues(lineCopy.rightColor)) end
+        if lineCopy.rightShown then rightRegion:Show() else rightRegion:Hide() end
+    end
+end
+
+local ATTRIBUTION_LINE = {
+    leftText = " ", leftColor = { 0, 0, 0, 1 }, leftShown = true, leftWrap = false,
+    rightText = TooltipEngine.ATTRIBUTION_TEXT, rightColor = { ATTRIBUTION_R, ATTRIBUTION_G, ATTRIBUTION_B, 1 }, rightShown = true,
+}
+
+-- Call after adding lines to a tooltip (before its :Show()). Hidden scan tooltips are skipped.
+function TooltipEngine.AttributeTooltip(tipFrame)
+    if not TooltipEngine.IsDecoratableTooltip(tipFrame) then return end
+    if type(tipFrame.NumLines) ~= "function" or type(tipFrame.AddDoubleLine) ~= "function" then return end
+    if not attributionClearHooked[tipFrame] and tipFrame.HasScript and tipFrame:HasScript("OnTooltipCleared") then
+        attributionClearHooked[tipFrame] = true
+        tipFrame:HookScript("OnTooltipCleared", function(self) attributedTooltips[self] = nil end)
+    end
+    local okNum, numLines = pcall(tipFrame.NumLines, tipFrame)
+    numLines = okNum and tonumber(PlatformBridge.nosecret(numLines)) or nil
+    if not numLines or numLines < 1 then return end
+    local tipName = tipFrame.GetName and PlatformBridge.nosecret(tipFrame:GetName())
+    if type(tipName) ~= "string" then
+        -- lines can't be read back: rely on the mark alone
+        if attributedTooltips[tipFrame] then return end
+        tipFrame:AddDoubleLine(" ", TooltipEngine.ATTRIBUTION_TEXT, 0, 0, 0, ATTRIBUTION_R, ATTRIBUTION_G, ATTRIBUTION_B)
+        attributedTooltips[tipFrame] = true
+        return
+    end
+
+    local tagIdx
+    if attributedTooltips[tipFrame] then
+        for lineIdx = numLines, 2, -1 do
+            local _, rightRegion = attributionRegions(tipFrame, tipName, lineIdx)
+            if rightRegion and TooltipEngine.IsAttributionText(rightRegion:GetText()) then
+                tagIdx = lineIdx
+                break
+            end
+        end
+    end
+    if not tagIdx then
+        tipFrame:AddDoubleLine(" ", TooltipEngine.ATTRIBUTION_TEXT, 0, 0, 0, ATTRIBUTION_R, ATTRIBUTION_G, ATTRIBUTION_B)
+        attributedTooltips[tipFrame] = true
+        return
+    end
+
+    -- Lines added below the attribution line: move them up one row.
+    local rowsBelow, lastFilled = {}, nil
+    for lineIdx = tagIdx + 1, numLines do
+        local lineCopy = snapshotLine(tipFrame, tipName, lineIdx)
+        if not lineCopy then return end   -- unreadable line below: leave everything as it is
+        rowsBelow[lineIdx] = lineCopy
+        if lineCopy.filled then lastFilled = lineIdx end
+    end
+    if not lastFilled then return end
+    for lineIdx = tagIdx, lastFilled - 1 do
+        writeLine(tipFrame, tipName, lineIdx, rowsBelow[lineIdx + 1])
+    end
+    writeLine(tipFrame, tipName, lastFilled, ATTRIBUTION_LINE)
+end
+
+-- A group token ("party1") can be locked inside instances while the same person
+-- read through "mouseover" / "target" / "focus" is not. Returns a readable token
+-- for the same unit, or the original one.
+function TooltipEngine:ReadableUnit(unitToken, tooltipData)
+    if not self:IsUnitRestricted(unitToken) then return unitToken end
+    local guid = tooltipData and PlatformBridge.nosecret(tooltipData.guid)
+    if not guid and unitToken and not PlatformBridge.issecret(unitToken) then
+        guid = PlatformBridge.nosecret(UnitGUID(unitToken))
+    end
+    for _, alt in ipairs({ "mouseover", "target", "focus" }) do
+        if alt ~= unitToken and not self:IsUnitRestricted(alt) then
+            local altGUID = PlatformBridge.nosecret(UnitGUID(alt))
+            local same = guid and altGUID and altGUID == guid
+            if not same and not guid and unitToken then
+                local ok, isSame = pcall(UnitIsUnit, alt, unitToken)
+                same = ok and PlatformBridge.nosecret(isSame) == true
+            end
+            if same then return alt end
+        end
+    end
+    return unitToken
 end
 
 function TooltipEngine:IsUnitRestricted(unitToken)

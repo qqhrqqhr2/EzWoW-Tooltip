@@ -328,6 +328,7 @@ function GatherSkill.onObjectTooltip(tipFrame, tooltipData)
     local nodeInfo = GatherSkill.lookupNode(GatherSkill.cleanName(titleText))
     if not nodeInfo then return end
     tipFrame:AddLine(GatherSkill.composeLine(nodeInfo[1], nodeInfo[2]))
+    addon.AttributeTooltip(tipFrame)
     tipFrame:Show()
 end
 
@@ -352,6 +353,7 @@ function GatherSkill.onMinimapTooltip(tipFrame, tooltipData)
     for _, foundEntry in ipairs(foundNodes) do
         tipFrame:AddLine(GatherSkill.composeLine(foundEntry[2][1], foundEntry[2][2], labelEach and foundEntry[1] or nil))
     end
+    addon.AttributeTooltip(tipFrame)
     tipFrame:Show()
 end
 
@@ -374,6 +376,7 @@ function GatherSkill.onUnitTooltip(tipFrame, tooltipData)
     unitLevel = isCallOk and nosecret(unitLevel) or nil
     if type(unitLevel) ~= "number" or unitLevel <= 0 then return end
     tipFrame:AddLine(GatherSkill.composeLine(SKINNING, GatherSkill.skinningRequirement(unitLevel)))
+    addon.AttributeTooltip(tipFrame)
     tipFrame:Show()
     EventDispatcher:trigger("tooltip:layout", tipFrame)
 end

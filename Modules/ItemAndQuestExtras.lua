@@ -28,6 +28,14 @@ local appendDualNameToTitle = addon.AppendDualNameToTitle
 local verifyItemCollectionStatus = addon.CheckItemCollectionStatus
 local composeReagentUsage = addon.FormatReagentUsage
 local composeItemSources = addon.FormatItemSources
+-- EzWoW - Bags reads this flag: when set, its price trend is appended to the auction price line here.
+addon.appendsBagsTrend = true
+local function bagsPriceTrend(itemID)
+    local bags = _G.EzWoW_Bags
+    if type(bags) ~= "table" or type(bags.PriceTrendText) ~= "function" then return nil end
+    local ok, text = pcall(bags.PriceTrendText, itemID)
+    return ok and type(text) == "string" and text ~= "" and text or nil
+end
 local queryItemCountAPI = addon.QueryItemCountSafe
 local resolveZoneCollectionSummary = addon.GetZoneCollectionSummary
 
@@ -48,6 +56,35 @@ local ITEM_TAGS = {
     TOKEN_RWD  = "|cff4BC8E8◇|r|cff000117|r ",
     AH_PRICE   = "|cff4BC8E8◆|r|cff000118|r ",
 }
+
+-----------------------------------------------------------------------------
+-- Lines another EzWoW addon already shows on the same tooltip
+-----------------------------------------------------------------------------
+-- EzWoW-BestGearFinder (option "item sources in tooltips") lists where a piece of gear drops,
+-- which quest or vendor gives it and, for crafted gear, its reagents and where the recipe is
+-- learned. When it does, our source lines for that item would repeat it.
+-- Returns: sources covered, craft reagents/recipe source covered.
+function ItemQuestEnricher.bestGearCoversSource(tip, itemID)
+    local bgf = _G.EzWoW_BestGearFinder
+    if type(bgf) ~= "table" or type(bgf.CoversItemSource) ~= "function" then return false, false end
+    local ok, covers, coversCraft = pcall(bgf.CoversItemSource, bgf, tip, itemID)
+    if not ok then return false, false end
+    return covers and true or false, (covers and coversCraft) and true or false
+end
+
+-- EzWoW-ProfessionRecipes adds "used in N recipes" (option "recipes that use an item") and the
+-- learned / can-learn status on recipe items.
+function ItemQuestEnricher.professionRecipesCovers(kind, tip, itemID)
+    local pr = _G.EzWoW_ProfessionRecipes
+    if type(pr) ~= "table" then return false end
+    local fn = (kind == "usedIn" and pr.CoversReagentUsage) or (kind == "recipe" and pr.CoversRecipeStatus) or nil
+    if type(fn) ~= "function" then
+        -- older versions without the check: they always showed "used in" while loaded
+        return kind == "usedIn" and _G.EzWoWProfessionRecipesFrame ~= nil
+    end
+    local ok, covers = pcall(fn, tip, itemID)
+    return ok and covers and true or false
+end
 
 function ItemQuestEnricher.composeRelativeAge(ts)
     ts = tonumber(ts)
@@ -194,6 +231,7 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
     end
 
     appendDualNameToTitle(tip, "item", itemID)
+    local linesBefore = tip:NumLines() or 0
 
     local containsBagCount, containsSellPrice, containsUsedIn, containsItemLevel = ItemQuestEnricher.inspectExistingItemTooltipState(tip)
     local hasShift = IsShiftKeyDown()
@@ -212,6 +250,11 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
     if itemID and (not iCfg or iCfg.showCollectionStatus ~= false) then
         if not addon:FindLine(tip, "^" .. ITEM_TAGS.COLLECT) then
             _, statusText = verifyItemCollectionStatus(itemID, link, false)
+            -- a recipe item's learned state is already shown by EzWoW-ProfessionRecipes
+            if statusText and addon.RecipeItemDB and addon.RecipeItemDB[itemID]
+                and ItemQuestEnricher.professionRecipesCovers("recipe", tip, itemID) then
+                statusText = nil
+            end
             if statusText then
                 tip:AddLine(format("%s|cffA7B9C5%s:|r %s", ITEM_TAGS.COLLECT, resolveExtraLocaleText("collection"), statusText))
             end
@@ -221,6 +264,9 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
     if itemID and (not iCfg or iCfg.showSourceInfo ~= false) then
         if not addon:FindLine(tip, "^" .. ITEM_TAGS.SOURCE1) then
             local sources, recipeSrcLine, reagLine, primaryLocKey = composeItemSources(itemID, link)
+            local bgfSources, bgfCraft = ItemQuestEnricher.bestGearCoversSource(tip, itemID)
+            if bgfSources then sources = {} end
+            if bgfCraft then recipeSrcLine, reagLine = nil, nil end
             if sources[1] then
                 tip:AddLine(format("%s|cffA7B9C5%s:|r %s", ITEM_TAGS.SOURCE1, resolveExtraLocaleText("source"), sources[1]))
             end
@@ -267,7 +313,8 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
                 end
             end
         end
-        if not containsUsedIn and not _G.EzWoWProfessionRecipesFrame and not addon:FindLine(tip, "^" .. ITEM_TAGS.USED_IN) then
+        if not containsUsedIn and not ItemQuestEnricher.professionRecipesCovers("usedIn", tip, itemID)
+            and not addon:FindLine(tip, "^" .. ITEM_TAGS.USED_IN) then
             local usedInLine = composeReagentUsage(itemID)
             if usedInLine then
                 tip:AddLine(format("%s|cff8398A6%s:|r %s", ITEM_TAGS.USED_IN, resolveExtraLocaleText("usedIn"), usedInLine))
@@ -340,6 +387,8 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
                     or (times and tonumber(times[itemID] or times[tostring(itemID)]))
                     or (EzWoW_TooltipDB and tonumber(EzWoW_TooltipDB.auctionLastScan))
                 local ageTxt = ItemQuestEnricher.composeRelativeAge(seenTs)
+                local trendTxt = bagsPriceTrend(itemID)
+                if trendTxt then priceStr = priceStr .. "  " .. trendTxt end
                 tip:AddLine(format("%s|cffA7B9C5%s:|r %s%s", ITEM_TAGS.AH_PRICE, resolveExtraLocaleText("auctionPrice"), priceStr, ageTxt))
             end
         elseif itemBindType ~= 1 and itemBindType ~= 4 and itemClassID ~= 12 then
@@ -357,6 +406,9 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
         end
     end
 
+    if (tip:NumLines() or 0) > linesBefore then
+        addon.AttributeTooltip(tip)
+    end
     if addon.RemoveDebugTelemetryTooltipLines then
         addon.RemoveDebugTelemetryTooltipLines(tip)
     end
@@ -381,6 +433,7 @@ EventDispatcher:attachTrigger("tooltip:spell", function(self, tip, spellID)
     end
     local iCfg = addon.db and addon.db.item
 
+    local linesBefore = tip:NumLines() or 0
     if not iCfg or iCfg.showSourceInfo ~= false then
         local profLine, recipeSrcLine, reagLine = composeCraftedExtras(rawRecipe)
         if profLine and not addon:FindLine(tip, "^" .. ITEM_TAGS.SOURCE1) then
@@ -392,6 +445,9 @@ EventDispatcher:attachTrigger("tooltip:spell", function(self, tip, spellID)
         if reagLine and not addon:FindLine(tip, "^" .. ITEM_TAGS.REAGENTS) then
             tip:AddLine(format("%s|cff8398A6%s:|r %s", ITEM_TAGS.REAGENTS, resolveExtraLocaleText("reagents"), reagLine))
         end
+    end
+    if (tip:NumLines() or 0) > linesBefore then
+        addon.AttributeTooltip(tip)
     end
     if addon.RemoveDebugTelemetryTooltipLines then
         addon.RemoveDebugTelemetryTooltipLines(tip)
@@ -475,6 +531,7 @@ function ItemQuestEnricher.appendQuestTooltipInfo(tip, link)
     else
         tip:AddLine(format("%s|cffA7B9C5%s:|r %s", ITEM_TAGS.QUEST_SRC, resolveExtraLocaleText("collection"), statusBadge))
     end
+    addon.AttributeTooltip(tip)
     if addon.RemoveDebugTelemetryTooltipLines then
         addon.RemoveDebugTelemetryTooltipLines(tip)
     end
@@ -487,3 +544,63 @@ hooksecurefunc(ItemRefTooltip, "SetHyperlink", ItemQuestEnricher.appendQuestTool
 hooksecurefunc(GameTooltip, "SetHyperlink", ItemQuestEnricher.appendQuestTooltipInfo)
 
 addon.FormatRelativeAge = ItemQuestEnricher.composeRelativeAge
+
+-----------------------------------------------------------------------------
+-- Compare with equipped gear without Shift
+-----------------------------------------------------------------------------
+-- The client's own "always compare items" setting drives the comparison tooltips of every
+-- item tooltip (bags, chat links, addon windows), so no tooltip code is replaced. The setting
+-- is only turned back off if this addon was the one that turned it on.
+local COMPARE_CVAR = "alwaysCompareItems"
+local compareSyncPending = false
+
+-- One time: this option used to live in EzWoW-BestGearFinder. Keep a choice made there.
+function ItemQuestEnricher.migrateEquipCompare()
+    local store = EzWoW_TooltipDB
+    if type(store) ~= "table" or store.migratedEquipCompare then return end
+    store.migratedEquipCompare = true
+    local old = _G.EzWoW_BestGearFinderDB
+    if type(old) == "table" and old.showEquipCompare == false then
+        if type(store.item) == "table" then store.item.showEquipCompare = false end
+        local iCfg = addon.db and addon.db.item
+        if iCfg then iCfg.showEquipCompare = false end
+    end
+end
+
+function ItemQuestEnricher.syncEquipCompare()
+    -- saved variables of every addon are only loaded at login
+    if IsLoggedIn and not IsLoggedIn() then return end
+    if InCombatLockdown and InCombatLockdown() then compareSyncPending = true; return end
+    compareSyncPending = false
+    ItemQuestEnricher.migrateEquipCompare()
+    local iCfg = addon.db and addon.db.item
+    local store = EzWoW_TooltipDB
+    if not iCfg or type(store) ~= "table" then return end
+    local getCVar = (C_CVar and C_CVar.GetCVar) or _G.GetCVar
+    local setCVar = (C_CVar and C_CVar.SetCVar) or _G.SetCVar
+    if type(getCVar) ~= "function" or type(setCVar) ~= "function" then return end
+    local ok, current = pcall(getCVar, COMPARE_CVAR)
+    if not ok or current == nil or issecret(current) then return end
+    -- the first test build had this on by default: put it back to Shift once
+    if not store.equipCompareDefaultOff then
+        store.equipCompareDefaultOff = true
+        iCfg.showEquipCompare = false
+    end
+    if iCfg.showEquipCompare == true then
+        if current ~= "1" then
+            pcall(setCVar, COMPARE_CVAR, "1")
+            store.equipCompareCVarSet = true
+        end
+    elseif store.equipCompareCVarSet then
+        if current ~= "0" then pcall(setCVar, COMPARE_CVAR, "0") end
+        store.equipCompareCVarSet = nil
+    end
+end
+addon.SyncEquipCompare = ItemQuestEnricher.syncEquipCompare
+
+EventDispatcher:attachTrigger("EZWOW_TOOLTIP_GENERAL_INIT", ItemQuestEnricher.syncEquipCompare)
+EventDispatcher:attachEvent("PLAYER_LOGIN", ItemQuestEnricher.syncEquipCompare)
+EventDispatcher:attachEvent("PLAYER_ENTERING_WORLD", ItemQuestEnricher.syncEquipCompare)
+EventDispatcher:attachEvent("PLAYER_REGEN_ENABLED", function()
+    if compareSyncPending then ItemQuestEnricher.syncEquipCompare() end
+end)

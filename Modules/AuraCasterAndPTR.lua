@@ -405,7 +405,9 @@ function AuraCasterTracker.paintAuraCasterLineOnTooltip(tip, displayCaster, plai
         end
     end
 
-    pcall(tip.AddLine, tip, fullLine)
+    if pcall(tip.AddLine, tip, fullLine) then
+        addon.AttributeTooltip(tip)
+    end
     if addon.RemoveDebugTelemetryTooltipLines then
         addon.RemoveDebugTelemetryTooltipLines(tip)
     end
@@ -687,7 +689,19 @@ end)
 -----------------------------------------------------------------------------
 -- Should Hide Issue Report
 -----------------------------------------------------------------------------
+-- Hiding the issue reporter belongs to EzWoW-ErrorCatcher; this copy only runs while it is not
+-- loaded. Decided after login, when every addon has loaded.
+AuraCasterTracker.ISSUE_REPORT_OWNER = "EzWoW-ErrorCatcher"
+
+function AuraCasterTracker.issueReportOwnedElsewhere()
+    if IsLoggedIn and not IsLoggedIn() then return true end
+    return addon.IsOtherAddOnLoaded(AuraCasterTracker.ISSUE_REPORT_OWNER)
+end
+
 function AuraCasterTracker.shouldHideIssueReport()
+    if AuraCasterTracker.issueReportOwnedElsewhere() then
+        return false
+    end
     if addon.db and addon.db.general and addon.db.general.hideIssueReport == false then
         return false
     end
@@ -719,6 +733,7 @@ local issueReporterHooked = false   -- kept here, not as a field on the reporter
 function addon:UpdateIssueReportState()
     local BugReportInterceptor = _G["PTR_IssueReporter"]
     if type(BugReportInterceptor) ~= "table" then return end
+    if AuraCasterTracker.issueReportOwnedElsewhere() then return end
 
     -- The reporter's own functions are left untouched (replacing them would spread taint);
     -- its tooltip line is removed afterwards by RemoveDebugTelemetryTooltipLines.

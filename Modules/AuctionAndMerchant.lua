@@ -158,6 +158,7 @@ function AuctionPriceScanner.extractLegacyAuctionEntry(index, minMap, allowLinkL
     if not prev or unitPrice < prev then
         minMap[itemID] = unitPrice
     end
+    AuctionPriceScanner.addListedQuantity(itemID, totalCount2)
     return true
 end
 
@@ -189,7 +190,16 @@ function AuctionPriceScanner.extractReplicateAuctionEntry(index, minMap)
     if not prev or unitPrice < prev then
         minMap[itemID] = unitPrice
     end
+    AuctionPriceScanner.addListedQuantity(itemID, totalCount2)
     return true
+end
+
+-- Listed quantity per item during a full scan (read by EzWoW - Bags for its price history).
+function AuctionPriceScanner.addListedQuantity(itemID, count)
+    local quantities = ahScanState.qtyMap
+    if quantities and itemID and count and count > 0 then
+        quantities[itemID] = (quantities[itemID] or 0) + count
+    end
 end
 
 function AuctionPriceScanner.finishChunkedScan()
@@ -199,6 +209,11 @@ function AuctionPriceScanner.finishChunkedScan()
     ahScanState.awaitingLegacy = false
     ahScanState.awaitingReplicate = false
     local updated = AuctionPriceScanner.commitSessionMinPrices(ahScanState.minMap)
+    if updated > 0 and ahScanState.qtyMap then
+        EzWoW_TooltipDB.auctionQuantities = ahScanState.qtyMap
+        EzWoW_TooltipDB.auctionQuantityTime = (GetServerTime and GetServerTime()) or (time and time()) or 0
+    end
+    ahScanState.qtyMap = nil
     ahScanState.minMap = nil
     ahScanState.pendingIndices = nil
     ahScanState.retryCount = 0
@@ -294,6 +309,7 @@ function AuctionPriceScanner.startChunkedScan(mode, totalCount)
     ahScanState.index = 1
     ahScanState.total = totalCount
     ahScanState.minMap = {}
+    ahScanState.qtyMap = {}
     ahScanState.pendingIndices = {}
     ahScanState.retryCount = 0
     AuctionPriceScanner.refreshAhButtonLabel()
@@ -526,6 +542,7 @@ function AuctionPriceScanner.prepareAuctionScanButton()
             local itemCount = addon:CountCachedAuctionPrices()
             local age = composeRelativeAge(EzWoW_TooltipDB and EzWoW_TooltipDB.auctionLastScan)
             GameTooltip:AddLine(format(resolveExtraLocaleText("ahTipCount"), itemCount) .. age, 0.294, 0.784, 0.910)
+            if addon.AttributeTooltip then addon.AttributeTooltip(GameTooltip) end
             GameTooltip:Show()
         end)
         actionBtn:SetScript("OnLeave", function(self)
@@ -778,7 +795,11 @@ function AuctionPriceScanner.sellJunkSweep()
     pass()
 end
 
+-- Auto-sell and auto-repair belong to EzWoW-Bags; this copy only runs while Bags is not loaded.
+AuctionPriceScanner.MERCHANT_OWNER = "EzWoW-Bags"
+
 function AuctionPriceScanner.handleMerchantShow()
+    if addon.IsOtherAddOnLoaded(AuctionPriceScanner.MERCHANT_OWNER) then return end
     if IsShiftKeyDown and IsShiftKeyDown() then return end
     local iCfg = addon.db and addon.db.item
 
