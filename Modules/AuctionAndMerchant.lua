@@ -142,21 +142,24 @@ function AuctionPriceScanner.extractLegacyAuctionEntry(index, minMap, allowLinkL
     if not effectiveBid or effectiveBid <= 0 then
         effectiveBid = tonumber(minBid) or 0
     end
-    local rawTotal = (buyoutPrice > 0) and buyoutPrice or effectiveBid
+    -- the price is the buyout only: an auction without one (bids only) would
+    -- otherwise count its usually very low starting bid as the lowest price
+    local rawTotal = (buyoutPrice > 0) and buyoutPrice or 0
 
-    if (not displayName or containsAllInfo == false) and (totalCount2 <= 0 or not rawTotal or rawTotal <= 0) then
+    if (not displayName or containsAllInfo == false) and (totalCount2 <= 0 or (rawTotal <= 0 and effectiveBid <= 0)) then
         AuctionPriceScanner.requestItemCacheLoad(itemID)
         return false
     end
 
     if totalCount2 <= 0 then totalCount2 = 1 end
-    if not rawTotal or rawTotal <= 0 then return true end
+    if rawTotal <= 0 and effectiveBid <= 0 then return true end
 
-    local unitPrice = math.max(1, math.floor(rawTotal / totalCount2))
-
-    local prev = minMap[itemID]
-    if not prev or unitPrice < prev then
-        minMap[itemID] = unitPrice
+    if rawTotal > 0 then
+        local unitPrice = math.max(1, math.floor(rawTotal / totalCount2))
+        local prev = minMap[itemID]
+        if not prev or unitPrice < prev then
+            minMap[itemID] = unitPrice
+        end
     end
     AuctionPriceScanner.addListedQuantity(itemID, totalCount2)
     return true
@@ -174,21 +177,24 @@ function AuctionPriceScanner.extractReplicateAuctionEntry(index, minMap)
     if not effectiveBid or effectiveBid <= 0 then
         effectiveBid = tonumber(minBid) or 0
     end
-    local rawTotal = (buyoutPrice > 0) and buyoutPrice or effectiveBid
+    -- the price is the buyout only: an auction without one (bids only) would
+    -- otherwise count its usually very low starting bid as the lowest price
+    local rawTotal = (buyoutPrice > 0) and buyoutPrice or 0
 
-    if (not displayName or containsAllInfo == false) and (totalCount2 <= 0 or not rawTotal or rawTotal <= 0) then
+    if (not displayName or containsAllInfo == false) and (totalCount2 <= 0 or (rawTotal <= 0 and effectiveBid <= 0)) then
         AuctionPriceScanner.requestItemCacheLoad(itemID)
         return false
     end
 
     if totalCount2 <= 0 then totalCount2 = 1 end
-    if not rawTotal or rawTotal <= 0 then return true end
+    if rawTotal <= 0 and effectiveBid <= 0 then return true end
 
-    local unitPrice = math.max(1, math.floor(rawTotal / totalCount2))
-
-    local prev = minMap[itemID]
-    if not prev or unitPrice < prev then
-        minMap[itemID] = unitPrice
+    if rawTotal > 0 then
+        local unitPrice = math.max(1, math.floor(rawTotal / totalCount2))
+        local prev = minMap[itemID]
+        if not prev or unitPrice < prev then
+            minMap[itemID] = unitPrice
+        end
     end
     AuctionPriceScanner.addListedQuantity(itemID, totalCount2)
     return true
@@ -943,7 +949,8 @@ extraEventsFrame:SetScript("OnEvent", function(self, event, arg1)
             local minUnit
             for indexEntry = 1, numericVal do
                 local apiInfo = C_AuctionHouse.GetItemSearchResultInfo(itemKey, indexEntry)
-                local price = apiInfo and (tonumber(apiInfo.buyoutAmount) or tonumber(apiInfo.minBid))
+                -- buyout only: a starting bid is not a price to buy at
+                local price = apiInfo and tonumber(apiInfo.buyoutAmount)
                 if price and price > 0 and (not minUnit or price < minUnit) then
                     minUnit = price
                 end
