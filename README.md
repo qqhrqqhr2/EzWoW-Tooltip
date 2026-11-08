@@ -35,11 +35,11 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 
 | 번호 | 툴팁 | 내용 |
 |---|---|---|
-| ① | 카드 스킨 · 3D 모델 | 다크 슬레이트 배경(`#12181F`), 직각/기본 테두리, 위쪽 광택, 부드럽게 사라지기, 아래쪽 체력 바(수치 표시). 테두리 색은 **플레이어 직업 / NPC 우호도 / 아이템 품질 / 퀘스트 난이도**를 따릅니다. 3D 캐릭터 · 몬스터 모델은 툴팁 왼쪽 여백에 표시합니다. |
+| ① | 카드 스킨 · 3D 모델 | 다크 슬레이트 배경(`#12181F`), 직각/기본 테두리, 위쪽 광택, 부드럽게 사라지기, 아래쪽 체력 바(수치 표시). 테두리 색은 **플레이어 직업 / NPC 우호도 / 아이템 품질 / 퀘스트 난이도**를 따릅니다. 3D 캐릭터 · 몬스터 모델은 툴팁 왼쪽 여백에 표시합니다. 이 애드온이 덧붙인 줄 끝에는 작은 회색 글자로 “EzWoW - Tooltip”이 오른쪽에 붙어, 어느 줄이 이 애드온의 것인지 알 수 있습니다. |
 | ② | 플레이어 | 칭호 · **이름 성** · 길드(계급) · 레벨 · 종족 · 직업 · 지역, **평균 아이템 레벨**, **특성 배분**, 탈것, 이동 속도(%), **대상의 대상**, **이 대상을 선택한 파티원**, PvP 계급. 아이템 레벨과 특성은 조사 후 캐시해 둡니다. |
 | ③ | NPC | 레벨 · 정예 · 종류, **지금 시전 중인 주문**, **내 위협 수준(%) · 탱킹 여부**, 대상, 생존 시간 · 위상, 드랍 수집 추적, NPC ID. |
 | ④ | 채집 숙련도 | 약초 · 광맥 · 가죽을 벗길 수 있는 시체 툴팁에 **필요한 숙련도와 내 숙련도**를 난이도 색(빨강 · 주황 · 노랑 · 초록 · 회색)으로 표시합니다. 배우지 않은 기술은 “미습득”. |
-| ⑤ | 아이템 · 착용 장비 비교 | **한 · 영 이름 병기**, 획득처(던전 · 보스 · 퀘스트 · 상인 · 제작 · 월드 드랍 등, 내장 `Data/SourceDB.lua`), 수집 상태(형상 · 탈것 · 도안 · 퀘스트), **가방/은행 보유 수량**, 최대 겹침(Shift), 상점 판매가, **경매장 저장 시세**(개당/묶음), 아이템 ID. **Shift 없이 착용 장비 비교** 옵션을 켜면 착용 중인 장비 툴팁이 나란히 뜹니다(기본 꺼짐). |
+| ⑤ | 아이템 · 착용 장비 비교 | **한 · 영 이름 병기**, 획득처(던전 · 보스 · 퀘스트 · 상인 · 제작 · 월드 드랍 등, 내장 `Data/SourceDB.lua`), 수집 상태(형상 · 탈것 · 도안 · 퀘스트), **가방/은행 보유 수량**, 최대 겹침(Shift), 상점 판매가, **경매장 저장 시세**(개당/묶음, 수집한 지 얼마나 됐는지), 아이템 ID. **Shift 없이 착용 장비 비교** 옵션을 켜면 착용 중인 장비 툴팁이 나란히 뜹니다(기본 꺼짐). |
 | ⑥ | 재료 | 그 재료를 쓰는 제조법 수(**재료 사용처**)와 보유 수량. |
 | ⑦ | 주문 · 오라 | 버프 · 디버프를 **건 사람(직업 색)**, 주문 ID, 아이콘. 툴팁 안의 지나치게 긴 소수점 숫자도 보기 좋게 정리합니다. |
 
@@ -47,7 +47,7 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 
 - **잡템 자동 판매**: 상점을 열면 회색 아이템을 팔고 번 금액을 채팅창에 알려 줍니다.
 - **자동 수리**: 상점을 열면 모든 장비를 수리하고 비용을 알려 줍니다.
-- **경매장 시세 저장**: 경매장을 열거나 검색할 때 최저 즉시 구매가를 모아 둡니다. 설정창 버튼으로 다시 수집할 수 있습니다.
+- **경매장 시세 저장**: 경매장을 열거나 검색할 때 최저 즉시 구매가를 모아 둡니다. 설정창의 [경매장 시세 갱신] 버튼으로 전체를 다시 수집할 수 있습니다.
 - 상점을 열 때 **Shift**를 누르고 있으면 자동 판매 · 수리를 건너뜁니다.
 
 #### 다른 EzWoW 애드온과 함께 쓰기
@@ -57,6 +57,7 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 | 함께 설치한 애드온 | 그쪽이 맡는 기능 | 이 애드온 |
 |---|---|---|
 | EzWoW - Bags | 잡템 자동 판매 · 자동 수리 | 설정 칸이 회색이 되고 “EzWoW - Bags에서 설정합니다”가 붙습니다. |
+| EzWoW - Bags | 시세 기록 · 등락 | 경매장 시세 줄 끝에 EzWoW - Bags가 기록한 **7일 평균 대비 등락**(▲/▼%)이 붙고, 전체 시세 수집 때 매물 수량을 EzWoW - Bags의 시세 기록에 넘겨 줍니다. |
 | EzWoW - Error Catcher | 이슈 리포터 창 · F6 제보 문구 숨김 | 설정 칸이 회색이 되고 “EzWoW - Error Catcher에서 설정합니다”가 붙습니다. |
 | EzWoW - Best Gear Finder | 장비 툴팁의 획득처 블록(드랍 · 퀘스트 · 상인 · 제작 재료) | 그 장비에서는 이 애드온의 획득처 줄을 생략합니다. |
 | EzWoW - Profession Recipes | 재료 툴팁의 “재료 사용처”, 도안 아이템의 배움/배울 수 있음 표시 | 그 아이템에서는 이 애드온의 해당 줄을 생략합니다. |
@@ -107,7 +108,7 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 ### 알아두면 좋은 점
 
 - 자동 판매 · 자동 수리는 기본으로 켜져 있습니다. 원하지 않으면 설정창에서 끄세요(EzWoW - Bags가 있으면 그쪽 설정을 따릅니다).
-- “Shift 없이 착용 장비 비교”는 이 애드온이 켠 경우에만 끌 때 게임 설정을 되돌립니다.
+- “Shift 없이 착용 장비 비교”는 이 애드온이 켠 경우에만 끌 때 게임 설정을 되돌립니다. 예전에 EzWoW - Best Gear Finder에서 이 기능을 꺼 두었다면 그 선택을 그대로 이어받습니다.
 - 드롭다운 스킨 옵션은 `/reload` 후에 적용됩니다.
 
 ---
@@ -136,11 +137,11 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 
 | No. | Tooltip | Contents |
 |---|---|---|
-| ① | Card skin · 3D model | Dark slate background (`#12181F`), angular/default border, top gloss, optional fade-out and a health bar with numbers. Border colour follows **class / NPC reaction / item quality / quest difficulty**. The 3D model of the unit sits in the tooltip's left margin. |
+| ① | Card skin · 3D model | Dark slate background (`#12181F`), angular/default border, top gloss, optional fade-out and a health bar with numbers. Border colour follows **class / NPC reaction / item quality / quest difficulty**. The 3D model of the unit sits in the tooltip's left margin. The lines this addon adds end with a small grey, right-aligned “EzWoW - Tooltip” tag so you can tell them apart. |
 | ② | Players | Title, **first name and surname**, guild (rank), level, race, class, zone, **average item level**, **talent split**, mount, movement speed (%), **target of target**, **party members targeting the unit**, PvP rank. Item level and talents are inspected and cached. |
 | ③ | NPCs | Level, elite, type, **current cast**, **your threat (%) and tanking**, target, alive time and layer, drop/quest tracking, NPC ID. |
 | ④ | Gathering skill | Herbs, ore veins and skinnable corpses show the **required and your current skill** in difficulty colours (red, orange, yellow, green, grey), or “not learned”. |
-| ⑤ | Items · compare with equipped | **Korean/English dual name**, sources (dungeon, boss, quest, vendor, craft, world drop… from the bundled `Data/SourceDB.lua`), collection status (appearance, mount, recipe, quest), **bag/bank count**, max stack (Shift), vendor price, **saved AH price** (each/stack), item ID. With **Compare with equipped gear without Shift** on, the equipped item's tooltip opens next to it (off by default). |
+| ⑤ | Items · compare with equipped | **Korean/English dual name**, sources (dungeon, boss, quest, vendor, craft, world drop… from the bundled `Data/SourceDB.lua`), collection status (appearance, mount, recipe, quest), **bag/bank count**, max stack (Shift), vendor price, **saved AH price** (each/stack, with its age), item ID. With **Compare with equipped gear without Shift** on, the equipped item's tooltip opens next to it (off by default). |
 | ⑥ | Reagents | How many recipes use the item (**Used In**) and how many you own. |
 | ⑦ | Spells · auras | **Who cast** a buff/debuff (class-coloured), spell ID, icon. Overly long decimals inside tooltips are tidied up. |
 
@@ -148,7 +149,7 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 
 - **Auto-sell junk**: grey items are sold when you open a merchant, with the total in chat.
 - **Auto-repair**: all gear is repaired at merchants and the cost is reported.
-- **AH prices**: lowest buyouts are collected while you open or search the Auction House; the settings button rescans.
+- **AH prices**: lowest buyouts are collected while you open or search the Auction House; the [Update AH Prices] button in settings rescans everything.
 - Hold **Shift** while opening a merchant to skip auto-sell and auto-repair.
 
 #### Working with other EzWoW addons
@@ -158,6 +159,7 @@ So that nothing shows twice, these addons take over the matching feature when th
 | Installed addon | Feature it takes over | This addon |
 |---|---|---|
 | EzWoW - Bags | Auto-sell junk · auto-repair | The check boxes turn grey with “Set in EzWoW - Bags”. |
+| EzWoW - Bags | Price history · trend | The AH price line gets the **change against the 7-day average** (▲/▼%) recorded by EzWoW - Bags, and a full price scan hands the listed quantities to its price history. |
 | EzWoW - Error Catcher | Hiding the Issue Reporter and the F6 bug hint | The check box turns grey with “Set in EzWoW - Error Catcher”. |
 | EzWoW - Best Gear Finder | The source block on gear tooltips (drops, quests, vendors, crafting reagents) | Leaves out its own source lines for that item. |
 | EzWoW - Profession Recipes | “Used In” on reagents, learned / can-learn status on recipe items | Leaves out its own lines for that item. |
@@ -208,7 +210,7 @@ So that nothing shows twice, these addons take over the matching feature when th
 ### Tips
 
 - Auto-sell and auto-repair are on by default; turn them off in settings if you do not want them (with EzWoW - Bags installed, its settings apply).
-- Turning “Compare with equipped gear without Shift” off restores the game setting only if this addon turned it on.
+- Turning “Compare with equipped gear without Shift” off restores the game setting only if this addon turned it on. If you had turned this off in EzWoW - Best Gear Finder before, that choice is kept.
 - The dropdown skin option takes effect after `/reload`.
 
 ---

@@ -284,7 +284,7 @@ class Window:
 
 
 def tooltip(x, y, lines, border="#344c5b", width=None, pad=10, bg="rgba(18,24,31,.95)", gloss=True, bar=None, font=12,
-            title_size=14, left_pad=0, z=30, extra=""):
+            title_size=14, left_pad=0, z=30, extra="", attrib=True):
     """A tooltip card at page px (x, y). lines: list of str | (left, right) | ("gap",); first line is the title.
     Strings are already HTML. bar: (fraction, colour, label) drawn along the bottom."""
     rows = []
@@ -296,6 +296,8 @@ def tooltip(x, y, lines, border="#344c5b", width=None, pad=10, bg="rgba(18,24,31
             rows.append(f'<div class="row" style="font-size:{px(fs)};line-height:1.42"><span>{ln[0]}</span><span>{ln[1]}</span></div>')
         else:
             rows.append(f'<div style="font-size:{px(fs)};line-height:1.42;white-space:nowrap">{ln}</div>')
+    if attrib:   # small grey right-aligned name line that ends every block of lines the addon adds
+        rows.append(f'<div style="font-size:{px(8)};line-height:1.6;text-align:right;color:#808080">{esc(TITLE)}</div>')
     w = f"width:{px(width)};" if width else ""
     glo = (f'<div class="abs" style="left:0;right:0;top:0;height:{px(26)};background:linear-gradient(to bottom,rgba(255,255,255,.07),'
            f'rgba(255,255,255,0))"></div>') if gloss else ""
@@ -526,7 +528,7 @@ T = {
     "ko": {
         "lead": "다크 카드 스킨 툴팁에 아이템 레벨 · 특성 · 위협 수준 · 획득처 · 수집 상태 · 보유 수량 · 경매장 시세 · 채집 숙련도를 함께 표시",
         "pName": "블루셰이드", "pSurname": "모래바람", "pTitle": "수호자", "pGuild": "&lt;새벽의 등불&gt; 기사단원",
-        "pLine": "28 레벨 인간 성기사 (플레이어)", "zone": "그늘숲", "talent": "신성 (21/5/0)", "mount": "갈색 말",
+        "pLine": "28 레벨 인간 성기사 (플레이어)", "zone": "그늘숲", "talent": "신성 (14/5/0)", "mount": "갈색 말",
         "target": "대상", "tName": "잿빛서리", "by": "들꽃노래", "by2": "검은송곳",
         "npc": "덤불숲 강도", "npcLine": "13 레벨 정예 인간형", "cast": "어둠의 화살", "npcTarget": "블루셰이드",
         "alive": "3분 12초", "npcId": "NPC ID",
@@ -535,15 +537,15 @@ T = {
         "armor": "방어구 214", "stats": ["+6 힘", "+5 체력"], "dur": "내구도 60 / 60", "req": "최소 요구 레벨: 26",
         "src1": "던전 · 통곡의 동굴 (12%)", "src2": "퀘스트 · 사라진 순찰대", "coll": "형상 미수집",
         "eq": "현재 착용 중", "eqItem": "낡은 판금 어깨보호구", "eqArmor": "방어구 150", "eqStat": "+3 힘", "itemId": "아이템 ID",
-        "reag": "은엽수", "reagEn": "Peacebloom Leaf", "reagType": "제작 재료",
+        "reag": "은엽수", "reagEn": "Silverleaf", "reagType": "제작 재료",
         "usedIn": "연금술 (11개) · 요리 (1개)", "aura": "신의 권능: 인내", "auraDesc": "체력이 증가합니다.", "spellId": "주문 ID",
         "auraCaster": "잿빛서리",
         "notes": [
-            ("카드 스킨 · 3D 모델", "다크 슬레이트 배경, 직각 테두리, 위쪽 광택, 아래쪽 체력 바(수치). 테두리 색은 직업 · NPC 우호도 · 아이템 품질 · 퀘스트 난이도. 3D 모델은 툴팁 왼쪽 여백에 표시."),
+            ("카드 스킨 · 3D 모델", "다크 슬레이트 배경, 직각 테두리, 위쪽 광택, 아래쪽 체력 바(수치). 테두리 색은 직업 · NPC 우호도 · 아이템 품질 · 퀘스트 난이도. 3D 모델은 툴팁 왼쪽 여백에 표시. 덧붙인 줄 끝에는 작은 회색 “EzWoW - Tooltip” 표시."),
             ("플레이어", "칭호 · 이름 성 · 길드, 아이템 레벨, 특성 배분, 탈것, 이동 속도, 대상의 대상, 이 대상을 선택한 파티원, PvP 계급."),
             ("NPC", "지금 시전 중인 주문, 내 위협 수준(%)·탱킹, 대상, 생존 시간 · 위상, 드랍 수집 추적, NPC ID."),
             ("채집 숙련도", "약초 · 광맥 · 가죽 벗길 수 있는 시체에 필요한 숙련도와 내 숙련도를 난이도 색(빨강 · 주황 · 노랑 · 초록 · 회색)으로."),
-            ("아이템 · 착용 장비 비교", "한 · 영 이름, 획득처, 수집 상태, 보유 수량, 상점 판매가, 경매장 시세, ID. 옵션을 켜면 Shift 없이 착용 장비 비교 툴팁이 함께 뜹니다(기본 꺼짐)."),
+            ("아이템 · 착용 장비 비교", "한 · 영 이름, 획득처, 수집 상태, 보유 수량, 상점 판매가, 경매장 시세(EzWoW - Bags가 있으면 7일 대비 등락), ID. 옵션을 켜면 Shift 없이 착용 장비 비교 툴팁이 함께 뜹니다(기본 꺼짐)."),
             ("재료", "이 재료를 쓰는 제조법 수(재료 사용처). EzWoW - Profession Recipes가 이 줄을 보여 주면 그쪽에 맡기고 겹쳐 쓰지 않습니다."),
             ("오라", "버프 · 디버프를 건 사람(직업 색)과 주문 ID."),
         ],
@@ -563,7 +565,7 @@ T = {
     "en": {
         "lead": "Dark card tooltips with item level, talents, threat, sources, collection status, owned count, AH price and gathering skill",
         "pName": "Blueshade", "pSurname": "Sandwind", "pTitle": "Warden", "pGuild": "&lt;Dawnlantern&gt; Knight",
-        "pLine": "Level 28 Human Paladin (Player)", "zone": "Duskwood", "talent": "Holy (21/5/0)", "mount": "Brown Horse",
+        "pLine": "Level 28 Human Paladin (Player)", "zone": "Duskwood", "talent": "Holy (14/5/0)", "mount": "Brown Horse",
         "target": "Target", "tName": "Ashfrost", "by": "Wildsong", "by2": "Darkfang",
         "npc": "Thicket Bandit", "npcLine": "Level 13 Elite Humanoid", "cast": "Shadow Bolt", "npcTarget": "Blueshade",
         "alive": "3m 12s", "npcId": "NPC ID",
@@ -572,15 +574,15 @@ T = {
         "armor": "214 Armor", "stats": ["+6 Strength", "+5 Stamina"], "dur": "Durability 60 / 60", "req": "Requires Level 26",
         "src1": "Dungeon · Wailing Caverns (12%)", "src2": "Quest · The Lost Patrol", "coll": "Appearance not collected",
         "eq": "Currently Equipped", "eqItem": "Worn Plate Shoulders", "eqArmor": "150 Armor", "eqStat": "+3 Strength", "itemId": "Item ID",
-        "reag": "Peacebloom Leaf", "reagEn": "은엽수", "reagType": "Crafting Reagent",
+        "reag": "Silverleaf", "reagEn": "은엽수", "reagType": "Crafting Reagent",
         "usedIn": "Alchemy (11) · Cooking (1)", "aura": "Power Word: Fortitude", "auraDesc": "Increases Stamina.", "spellId": "Spell ID",
         "auraCaster": "Ashfrost",
         "notes": [
-            ("Card skin · 3D model", "Dark slate background, angular border, top gloss, health bar with numbers. Border colour follows class, NPC reaction, item quality or quest difficulty. The 3D model sits in the tooltip's left margin."),
+            ("Card skin · 3D model", "Dark slate background, angular border, top gloss, health bar with numbers. Border colour follows class, NPC reaction, item quality or quest difficulty. The 3D model sits in the tooltip's left margin. Added lines end with a small grey “EzWoW - Tooltip” tag."),
             ("Players", "Title, first name and surname, guild, item level, talent split, mount, speed, target of target, party members targeting the unit, PvP rank."),
             ("NPCs", "Current cast, your threat (%) and tanking, target, alive time and layer, drop tracking, NPC ID."),
             ("Gathering skill", "Required and current skill on herbs, ore veins and skinnable corpses, in difficulty colours (red, orange, yellow, green, grey)."),
-            ("Items · compare with equipped", "Korean/English names, sources, collection status, owned count, vendor price, AH price, ID. With the option on, the equipped-gear comparison shows without Shift (off by default)."),
+            ("Items · compare with equipped", "Korean/English names, sources, collection status, owned count, vendor price, AH price (plus its 7-day change with EzWoW - Bags), ID. With the option on, the equipped-gear comparison shows without Shift (off by default)."),
             ("Reagents", "How many recipes use the item (Used In). When EzWoW - Profession Recipes shows these lines, this addon leaves them to it."),
             ("Auras", "Who cast a buff or debuff (class colour) and the spell ID."),
         ],
@@ -693,7 +695,7 @@ def ui_page(lang, ctx):
     elines = [f'<span style="color:#808080">{esc(t["eq"])}</span>', f'<span style="color:{QUALITY[2]}">{esc(t["eqItem"])}</span>',
               (f'<span style="color:{W}">{esc(t["slot"][0])}</span>', f'<span style="color:{W}">{esc(t["slot"][1])}</span>'),
               f'<span style="color:{W}">{esc(t["eqArmor"])}</span>', f'<span style="color:{W}">{esc(t["eqStat"])}</span>']
-    parts.append(tooltip(ix + iw * S + 2, iy, elines, border=QUALITY[2]))
+    parts.append(tooltip(ix + iw * S + 2, iy, elines, border=QUALITY[2], attrib=False))
 
     # 6 reagent with "used in"
     rx, ry = 760, 470

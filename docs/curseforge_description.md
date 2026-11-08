@@ -20,6 +20,7 @@ Clean dark card tooltips for WoW Forever, with extra information on players, NPC
 - Dark slate background, angular or default border, top gloss, optional fade-out, health bar with numbers.
 - Border colour follows class, NPC reaction, item quality or quest difficulty.
 - Optional 3D model of the unit in the tooltip's left margin. Scale 50–200%, opacity, and follow-cursor (6 directions), default or static position.
+- Lines added by this addon end with a small grey "EzWoW - Tooltip" tag.
 
 ### Players and NPCs
 - Players: title, first name and surname, guild, average item level, talent split, mount, movement speed, target of target, party members targeting the unit, PvP rank.
@@ -41,7 +42,7 @@ Clean dark card tooltips for WoW Forever, with extra information on players, NPC
 - Auto-sell grey junk and auto-repair (hold Shift to skip), Auction House prices collected while you browse.
 
 ## Working with other EzWoW addons
-- **EzWoW - Bags** installed: auto-sell and auto-repair are set there; the options here turn grey.
+- **EzWoW - Bags** installed: auto-sell and auto-repair are set there; the options here turn grey. The AH price line also shows its change against the 7-day average from the Bags price history.
 - **EzWoW - Error Catcher** installed: hiding the Issue Reporter is set there.
 - **EzWoW - Best Gear Finder** shows a source block on gear: this addon leaves out its own source lines for that item.
 - **EzWoW - Profession Recipes** shows "used in" and recipe learned status: this addon leaves out its own lines for that item.
@@ -72,6 +73,7 @@ WoW Forever용 다크 카드 스타일 툴팁입니다. 플레이어 · NPC · �
 - 다크 슬레이트 배경, 직각/기본 테두리, 위쪽 광택, 서서히 사라지기, 수치가 보이는 체력 바.
 - 테두리 색은 직업 · NPC 우호도 · 아이템 품질 · 퀘스트 난이도를 따릅니다.
 - 툴팁 왼쪽 여백에 3D 모델 표시(선택). 크기 50~200%, 투명도, 마우스 따라가기(6방향) · 게임 기본 · 고정 위치.
+- 이 애드온이 덧붙인 줄 끝에는 작은 회색 "EzWoW - Tooltip" 표시가 붙습니다.
 
 ### 플레이어 · NPC
 - 플레이어: 칭호, 이름 성, 길드, 평균 아이템 레벨, 특성 배분, 탈것, 이동 속도, 대상의 대상, 이 대상을 선택한 파티원, PvP 계급.
@@ -93,7 +95,7 @@ WoW Forever용 다크 카드 스타일 툴팁입니다. 플레이어 · NPC · �
 - 회색 잡템 자동 판매 · 자동 수리(Shift를 누르면 건너뜀), 경매장을 둘러볼 때 시세 저장.
 
 ## 다른 EzWoW 애드온과 함께 쓰기
-- **EzWoW - Bags**가 있으면 잡템 판매 · 자동 수리는 그쪽에서 설정합니다(이 애드온의 칸은 회색).
+- **EzWoW - Bags**가 있으면 잡템 판매 · 자동 수리는 그쪽에서 설정합니다(이 애드온의 칸은 회색). 경매장 시세 줄에는 EzWoW - Bags 시세 기록의 7일 평균 대비 등락도 붙습니다.
 - **EzWoW - Error Catcher**가 있으면 이슈 리포터 숨김은 그쪽에서 설정합니다.
 - **EzWoW - Best Gear Finder**가 장비의 획득처 블록을 보여 주면 이 애드온은 그 아이템의 획득처 줄을 생략합니다.
 - **EzWoW - Profession Recipes**가 재료 사용처 · 도안 배움 상태를 보여 주면 이 애드온은 그 줄을 생략합니다.
