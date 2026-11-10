@@ -47,6 +47,15 @@ Clean dark card tooltips for WoW Forever, with extra information on players, NPC
 - **EzWoW - Best Gear Finder** shows a source block on gear: this addon leaves out its own source lines for that item.
 - **EzWoW - Profession Recipes** shows "used in" and recipe learned status: this addon leaves out its own lines for that item.
 
+## Gamepad
+- With the gamepad UI on, EzWoW windows work with a gamepad: D-pad to move, A (✕) to press, X (□) for right-click, LB/RB to scroll, B (○) to close. A key guide in your pad's button style shows under the window.
+- With no game window open, press **View (Back) / Create** to move to the EzWoW frames on screen. Press it again or B to go back.
+- To use another button: Key Bindings > AddOns > EzWoW > "Gamepad: move to / leave the EzWoW frames" (with EzWoW-MapFinder installed).
+
+## Record sharing
+- Shared by all EzWoW addons and **on by default**: quest NPCs, rare monster sightings, item drops and gathering spots you have seen yourself are shared with other EzWoW users.
+- `/ezshare on` / `off`, `/ezshare channel on` / `off`, `/ezshare status`
+
 ## Commands
 - `/ezt` (`/et`, `/eztooltip`, `/ezwowtooltip`, `/툴팁`) — open the settings
 - `/ezt static` — place the static tooltip position
@@ -99,6 +108,15 @@ WoW Forever용 다크 카드 스타일 툴팁입니다. 플레이어 · NPC · �
 - **EzWoW - Error Catcher**가 있으면 이슈 리포터 숨김은 그쪽에서 설정합니다.
 - **EzWoW - Best Gear Finder**가 장비의 획득처 블록을 보여 주면 이 애드온은 그 아이템의 획득처 줄을 생략합니다.
 - **EzWoW - Profession Recipes**가 재료 사용처 · 도안 배움 상태를 보여 주면 이 애드온은 그 줄을 생략합니다.
+
+## 게임패드
+- 게임패드 UI를 켜면 EzWoW 창을 패드로 다룰 수 있습니다. 방향키로 이동, A(✕)로 누르기, X(□)로 오른쪽 클릭, LB/RB로 스크롤, B(○)로 닫기입니다. 창 아래에 연결된 패드 모양으로 키 안내가 나옵니다.
+- 블리자드 창이 열려 있지 않을 때 **보기(Back) / Create 버튼**을 누르면 화면의 EzWoW 프레임으로 이동합니다. 다시 누르거나 B를 누르면 돌아갑니다.
+- 다른 버튼을 쓰려면: 설정 > 단축키 > 애드온 > EzWoW > "게임패드: EzWoW 창으로 이동/돌아가기" (EzWoW-MapFinder 설치 시)
+
+## 기록 공유
+- 모든 EzWoW 애드온이 함께 쓰며 **기본으로 켜져 있습니다**. 직접 확인한 퀘스트 NPC, 희귀 몬스터 목격, 아이템 드롭, 채집 위치를 다른 EzWoW 사용자와 나눕니다.
+- `/ezshare on` / `off` (또는 `/공유`), `/ezshare channel on` / `off`, `/ezshare status`
 
 ## 명령어
 - `/ezt` (`/et`, `/eztooltip`, `/ezwowtooltip`, `/툴팁`) — 설정창 열기
