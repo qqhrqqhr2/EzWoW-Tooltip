@@ -26,10 +26,12 @@
 ## X-License: GPL-3.0
 ## X-Website: https://github.com/qqhrqqhr2/EzWoW-Tooltip
 ## IconTexture: Interface\AddOns\EzWoW-Tooltip\Media\Icon
-## SavedVariables: EzWoW_TooltipDB
+## SavedVariables: EzWoW_TooltipDB, EzWoW_SharedData
 ## SavedVariablesPerCharacter: EzWoW_TooltipPerCharDB
 ## OptionalDeps: Blizzard_PTRFeedback
 
+Libs\EzWoWGamePad\GamePad.lua
+Libs\EzWoWShare\Share.lua
 Core\Platform.lua
 Core\UIKit.lua
 Core\EventBus.lua
