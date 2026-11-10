@@ -1,7 +1,9 @@
-# v2.0.14
+# v2.0.15
 
 ### 한국어
-- 경매장 시세를 즉시 구입가 기준으로만 수집합니다. 즉시 구입가가 없는 경매의 입찰 시작가가 최저가로 잡혀 시세가 너무 낮게 나오던 문제를 고쳤습니다.
+- 게임패드를 지원합니다. 패드로 EzWoW 창을 다루고, 보기(Create) 버튼으로 화면의 EzWoW 프레임으로 이동합니다.
+- EzWoW 애드온끼리 퀘스트·희귀 몬스터·드롭·채집 기록을 공유합니다(기본 켜짐, `/ezshare`).
 
 ### English
-- Auction prices are now taken from buyouts only. Fixed bid-only auctions making prices look far too low through their starting bid.
+- Added gamepad support: EzWoW windows work with a gamepad, and View (Create) moves to the EzWoW frames on screen.
+- EzWoW addons now share quest, rare monster, drop and gathering records (on by default, `/ezshare`).
