@@ -71,25 +71,25 @@ function addon:StripMatchingTooltipLine(tip, prefixPattern)
     return false
 end
 
-local ILVL_PREFIX_TAG      = "|cff4BC8E8◆|r|cff000101|r "
-local MOUNT_PREFIX_TAG     = "|cff4BC8E8◆|r|cff000102|r "
-local SPEED_PREFIX_TAG     = "|cff4BC8E8◆|r|cff000103|r "
-local SCORE_PREFIX_TAG     = "|cff4BC8E8◆|r|cff000104|r "
-local CAST_PREFIX_TAG      = "|cff4BC8E8◆|r|cff000105|r "
-local THREAT_PREFIX_TAG    = "|cff4BC8E8◆|r|cff000106|r "
-local NPC_ALIVE_TAG        = "|cff4BC8E8◆|r|cff00010b|r "
-local NPC_TRACK_TAG        = "|cff4BC8E8◆|r|cff00010c|r "
-local NPC_NOTABLE_TAG      = "|cff4BC8E8◆|r|cff00010d|r "
+local ILVL_PREFIX_TAG      = compat.LineTag("000101")
+local MOUNT_PREFIX_TAG     = compat.LineTag("000102")
+local SPEED_PREFIX_TAG     = compat.LineTag("000103")
+local SCORE_PREFIX_TAG     = compat.LineTag("000104")
+local CAST_PREFIX_TAG      = compat.LineTag("000105")
+local THREAT_PREFIX_TAG    = compat.LineTag("000106")
+local NPC_ALIVE_TAG        = compat.LineTag("00010b")
+local NPC_TRACK_TAG        = compat.LineTag("00010c")
+local NPC_NOTABLE_TAG      = compat.LineTag("00010d")
 
-local ILVL_PATTERN         = "^|cff4BC8E8◆|r|cff000101|r "
-local MOUNT_PATTERN        = "^|cff4BC8E8◆|r|cff000102|r "
-local SPEED_PATTERN        = "^|cff4BC8E8◆|r|cff000103|r "
-local SCORE_PATTERN        = "^|cff4BC8E8◆|r|cff000104|r "
-local CAST_PATTERN         = "^|cff4BC8E8◆|r|cff000105|r "
-local THREAT_PATTERN       = "^|cff4BC8E8◆|r|cff000106|r "
-local NPC_ALIVE_PATTERN    = "^|cff4BC8E8◆|r|cff00010b|r "
-local NPC_TRACK_PATTERN    = "^|cff4BC8E8◆|r|cff00010c|r "
-local NPC_NOTABLE_PATTERN  = "^|cff4BC8E8◆|r|cff00010d|r "
+local ILVL_PATTERN         = "^" .. compat.LineTag("000101")
+local MOUNT_PATTERN        = "^" .. compat.LineTag("000102")
+local SPEED_PATTERN        = "^" .. compat.LineTag("000103")
+local SCORE_PATTERN        = "^" .. compat.LineTag("000104")
+local CAST_PATTERN         = "^" .. compat.LineTag("000105")
+local THREAT_PATTERN       = "^" .. compat.LineTag("000106")
+local NPC_ALIVE_PATTERN    = "^" .. compat.LineTag("00010b")
+local NPC_TRACK_PATTERN    = "^" .. compat.LineTag("00010c")
+local NPC_NOTABLE_PATTERN  = "^" .. compat.LineTag("00010d")
 
 function DropSourceInspector.cleanColors(text)
     if not text then return "" end
@@ -271,6 +271,12 @@ local PROF_FALLBACK_KO = {
     [202] = "기계공학", [333] = "마법부여", [356] = "낚시", [393] = "무두질",
 }
 
+local PROF_FALLBACK_EN = {
+    [129] = "First Aid", [164] = "Blacksmithing", [165] = "Leatherworking", [171] = "Alchemy",
+    [182] = "Herbalism", [185] = "Cooking", [186] = "Mining", [197] = "Tailoring",
+    [202] = "Engineering", [333] = "Enchanting", [356] = "Fishing", [393] = "Skinning",
+}
+
 local HOLIDAY_NAMES_KO = {
     [-37]  = "다크문 축제",
     [-559] = "어린이 주간",
@@ -404,20 +410,17 @@ function DropSourceInspector.determineNpcName(npcID)
     return format("NPC #%d", npcID)
 end
 
+-- Object names come only from the name tables: the Korean table on a Korean
+-- client, the English one otherwise (never Korean on another client). nil when
+-- the object has no known name; callers then leave the name out.
 function DropSourceInspector.determineObjectName(objID)
     objID = tonumber(objID)
     if not objID or objID <= 0 then return nil end
     local userPref = resolveActiveLocale()
-    if userPref == "koKR" and addon.ObjectNameDB_koKR and addon.ObjectNameDB_koKR[objID] then
-        return addon.ObjectNameDB_koKR[objID]
-    end
-    if addon.ObjectNameDB_enUS and addon.ObjectNameDB_enUS[objID] then
-        return addon.ObjectNameDB_enUS[objID]
-    end
-    if addon.ObjectNameDB_koKR and addon.ObjectNameDB_koKR[objID] then
-        return addon.ObjectNameDB_koKR[objID]
-    end
-    return format("Object #%d", objID)
+    local objectName = (userPref == "koKR" and addon.ObjectNameDB_koKR and addon.ObjectNameDB_koKR[objID])
+        or (addon.ObjectNameDB_enUS and addon.ObjectNameDB_enUS[objID])
+    if type(objectName) == "string" and objectName ~= "" then return objectName end
+    return nil
 end
 
 function DropSourceInspector.determineQuestName(questID)
@@ -480,7 +483,8 @@ function DropSourceInspector.determineProfessionName(profID)
         local isCallOk, displayName = pcall(GetSpellInfo, spellID)
         if isCallOk and displayName and displayName ~= "" then return nosecret(displayName) end
     end
-    return PROF_FALLBACK_KO[profID] or format("Skill #%d", profID)
+    local fallbackNames = (resolveActiveLocale() == "koKR") and PROF_FALLBACK_KO or PROF_FALLBACK_EN
+    return fallbackNames[profID] or PROF_FALLBACK_EN[profID] or format("Skill #%d", profID)
 end
 
 function DropSourceInspector.hasQuestCompleted(questID)
@@ -789,6 +793,19 @@ addon.FACTION_FALLBACK_KO = {
     [909] = "다크문 유랑단", [910] = "노즈도르무 혈족",
 }
 
+local FACTION_FALLBACK_EN = {
+    [59] = "Thorium Brotherhood", [87] = "Bloodsail Buccaneers", [270] = "Zandalar Tribe",
+    [509] = "The League of Arathor", [510] = "The Defilers", [529] = "Argent Dawn",
+    [576] = "Timbermaw Hold", [609] = "Cenarion Circle", [729] = "Frostwolf Clan",
+    [730] = "Stormpike Guard", [749] = "Hydraxian Waterlords",
+    [889] = "Warsong Outriders", [890] = "Silverwing Sentinels",
+    [909] = "Darkmoon Faire", [910] = "Brood of Nozdormu",
+}
+local STANDING_FALLBACK = {
+    koKR = { [5] = "우호적", [6] = "매우 우호적", [7] = "확고한 동맹", [8] = "확고한 동맹" },
+    enUS = { [5] = "Friendly", [6] = "Honored", [7] = "Revered", [8] = "Exalted" },
+}
+
 function DropSourceInspector.determineFactionAndStanding(factionID, standingID)
     local facName
     if C_Reputation and C_Reputation.GetFactionDataByID then
@@ -803,17 +820,72 @@ function DropSourceInspector.determineFactionAndStanding(factionID, standingID)
         end
     end
     if not facName or facName == "" then
-        facName = (addon.FACTION_FALLBACK_KO and addon.FACTION_FALLBACK_KO[factionID]) or format("Faction #%d", factionID)
+        local isKorean = (resolveActiveLocale() == "koKR")
+        facName = (isKorean and addon.FACTION_FALLBACK_KO and addon.FACTION_FALLBACK_KO[factionID])
+            or FACTION_FALLBACK_EN[factionID] or format("Faction #%d", factionID)
     end
     local standLabel = (standingID and standingID > 0 and _G["FACTION_STANDING_LABEL" .. standingID]) or nil
     if not standLabel or standLabel == "" then
-        if standingID == 5 then standLabel = "우호적"
-        elseif standingID == 6 then standLabel = "매우 우호적"
-        elseif standingID == 7 then standLabel = "확고한 동맹"
-        elseif standingID == 8 then standLabel = "확고한 동맹"
-        end
+        local labels = STANDING_FALLBACK[resolveActiveLocale()] or STANDING_FALLBACK.enUS
+        standLabel = standingID and labels[standingID] or nil
     end
     return facName, standLabel
+end
+
+-- Free text stored in the source data (vendor kinds, gathering notes, some
+-- drop notes) is written in Korean. On other clients the common ones are
+-- shown in English and the rest is left out (never shown in Korean).
+local DATA_TEXT_EN = {
+    ["일반몹"] = "Trash mobs", ["모든 보스"] = "All bosses", ["월드 보스"] = "World bosses",
+    ["전 지역"] = "All zones", ["고레벨 지역"] = "High-level zones", ["직업 기술 도서"] = "Class books",
+    ["몬스터 및 보스 드랍"] = "Monsters and bosses", ["인간형 몬스터 드랍"] = "Humanoids",
+    ["거미 몬스터 드랍"] = "Spiders", ["야수 몬스터 드랍"] = "Beasts", ["언데드 몬스터 드랍"] = "Undead",
+    ["야수 몬스터 무두질"] = "Skinning beasts", ["고급 장비 마력 추출"] = "Disenchanting uncommon gear",
+    ["희귀 장비 마력 추출"] = "Disenchanting rare gear", ["영웅 장비 마력 추출"] = "Disenchanting epic gear",
+    ["방어구 마력 추출"] = "Disenchanting armor", ["장비 마력 추출"] = "Disenchanting gear",
+    ["약초 채집"] = "Herbalism", ["마법부여"] = "Enchanting",
+    ["대도시"] = "Cities", ["대도시 · 마을"] = "Cities · Towns", ["대도시 · 여관"] = "Cities · Inns",
+    ["여관주인 · 음료 상인"] = "Innkeepers · Drink vendors",
+    ["구리 광맥"] = "Copper Vein", ["주석 광맥"] = "Tin Vein", ["은 광맥"] = "Silver Vein",
+    ["철 광맥"] = "Iron Deposit", ["금 광맥"] = "Gold Vein", ["미스릴 광맥"] = "Mithril Deposit",
+    ["진은 광맥"] = "Truesilver Deposit", ["토륨 광맥"] = "Thorium Vein", ["풍부한 토륨 광맥"] = "Rich Thorium Vein",
+    ["화산 심장부"] = "Molten Core", ["검은날개 둥지"] = "Blackwing Lair", ["낙스라마스"] = "Naxxramas",
+    ["안퀴라즈 사원"] = "Temple of Ahn'Qiraj", ["안퀴라즈 폐허"] = "Ruins of Ahn'Qiraj",
+    ["놈리건"] = "Gnomeregan", ["통곡의 동굴"] = "Wailing Caverns", ["죽음의 폐광"] = "The Deadmines",
+    ["검은바위 나락"] = "Blackrock Depths", ["스칼로맨스"] = "Scholomance", ["실리더스"] = "Silithus",
+    ["운고로 분화구"] = "Un'Goro Crater", ["저습지"] = "Wetlands", ["달라란"] = "Dalaran",
+    ["심장부 사냥개"] = "Core Hound", ["아주어고스"] = "Azuregos", ["레손"] = "Lethon",
+    ["에메리스"] = "Emeriss", ["이손드레"] = "Ysondre", ["타에라"] = "Taerar",
+}
+
+function DropSourceInspector.dataText(text)
+    if type(text) ~= "string" or text == "" then return nil end
+    if resolveActiveLocale() == "koKR" or not DropSourceInspector.containsHangul(text) then return text end
+    local base, levelRange = text:match("^(.-)( %(Lv %d+~%d+%))$")
+    local english = DATA_TEXT_EN[base or text]
+    if english then return english .. (base and levelRange or "") end
+    return nil
+end
+
+-- Instance keys in the data ("BlackwingLair", "TheTempleofAhnQiraj") as words.
+function DropSourceInspector.prettyZoneKey(key)
+    if type(key) ~= "string" or key == "" then return nil end
+    if key:find(" ", 1, true) or DropSourceInspector.containsHangul(key) then return key end
+    local spaced = key:gsub("(%l)of(%u)", "%1 of %2"):gsub("(%l)(%u)", "%1 %2")
+    return spaced
+end
+
+-- "[label] first > second": the parts that are known; the label alone when
+-- nothing else is (the label is never repeated as the name).
+function DropSourceInspector.composeLabeledRecord(tagHex, tagText, firstName, secondName, secondHex, tailText)
+    local head = format("|cff%s[%s]|r", tagHex, tagText)
+    tailText = tailText or ""
+    if firstName and secondName then
+        return format("%s |cffEDF4F7%s|r |cff8398A6>|r |cff%s%s|r%s", head, firstName, secondHex, secondName, tailText)
+    elseif firstName or secondName then
+        return format("%s |cffEDF4F7%s|r%s", head, firstName or secondName, tailText)
+    end
+    return head .. tailText
 end
 
 function DropSourceInspector.composeSingleSourceRecord(recordItem)
@@ -833,18 +905,17 @@ function DropSourceInspector.composeSingleSourceRecord(recordItem)
         return format("|cffC9A4EF[%s]|r |cffEDF4F7%s|r%s", resolveExtraLocaleText("srcDungeon"), instName, coordTxt), -locID
 
     elseif kind == "DN" then
-        local zName = (locStr and locStr ~= "") and locStr or resolveExtraLocaleText("srcMob")
-        local bName = (extraID > 0 and DropSourceInspector.determineNpcName(extraID)) or ((subStr and subStr ~= "") and subStr) or nil
-        if bName and bName ~= "" and not bName:find("^NPC #") then
-            return format("|cffC9A4EF[%s]|r |cffEDF4F7%s|r |cff8398A6>|r |cffF1BD57%s|r%s", resolveExtraLocaleText("srcMob"), zName, bName, coordTxt), nil
-        end
-        return format("|cffC9A4EF[%s]|r |cffEDF4F7%s|r%s", resolveExtraLocaleText("srcMob"), zName, coordTxt), nil
+        local zName = DropSourceInspector.dataText(DropSourceInspector.prettyZoneKey(locStr))
+        local bName = (extraID > 0) and DropSourceInspector.determineNpcName(extraID) or nil
+        if bName and bName:find("^NPC #") then bName = nil end
+        bName = bName or DropSourceInspector.dataText(subStr)
+        return DropSourceInspector.composeLabeledRecord("C9A4EF", resolveExtraLocaleText("srcMob"), zName, bName, "F1BD57", coordTxt), nil
 
     elseif kind == "G" then
         local profName = DropSourceInspector.determineProfessionName(locID) or resolveExtraLocaleText("srcGather")
         local skillTxt = (subID > 0) and format(" (%d)", subID) or ""
         local locName = (extraID > 0) and DropSourceInspector.determineLocationName(extraID) or nil
-        local desc = (coordStr and coordStr ~= "") and coordStr or nil
+        local desc = DropSourceInspector.dataText(coordStr)
         if desc and locName then
             return format("|cffAEE26A[%s]|r |cffEDF4F7%s%s|r |cff8398A6·|r |cffF1BD57%s|r |cff8398A6(%s)|r", resolveExtraLocaleText("srcGather"), profName, skillTxt, desc, locName), (extraID > 0 and extraID or nil)
         elseif desc then
@@ -855,13 +926,13 @@ function DropSourceInspector.composeSingleSourceRecord(recordItem)
         return format("|cffAEE26A[%s]|r |cffEDF4F7%s%s|r", resolveExtraLocaleText("srcGather"), profName, skillTxt), nil
 
     elseif kind == "FS" then
-        local locName = DropSourceInspector.determineLocationName(locID) or resolveExtraLocaleText("srcFishing")
+        local locName = DropSourceInspector.determineLocationName(locID)
         local hasKo = (resolveActiveLocale() == "koKR")
         local skillTxt = (subID > 0) and (hasKo and format("숙련 %d", subID) or format((addon.EXTRA_LOCALE and addon.EXTRA_LOCALE[resolveActiveLocale()] and addon.EXTRA_LOCALE[resolveActiveLocale()].srcSkillFmt) or "Skill %d", subID)) or nil
         local rateTxt = (coordStr and coordStr ~= "") and coordStr or nil
         local meta = (rateTxt and skillTxt) and (rateTxt .. " · " .. skillTxt) or (rateTxt or skillTxt)
         local metaStr = meta and format(" |cff8398A6(%s)|r", meta) or ""
-        return format("|cff4BC8E8[%s]|r |cffEDF4F7%s|r%s", resolveExtraLocaleText("srcFishing"), locName, metaStr), (locID > 0 and locID or nil)
+        return DropSourceInspector.composeLabeledRecord("4BC8E8", resolveExtraLocaleText("srcFishing"), locName, nil, nil, metaStr), (locID > 0 and locID or nil)
 
     elseif kind == "F" then
         local facName, standName = DropSourceInspector.determineFactionAndStanding(locID, subID)
@@ -871,13 +942,18 @@ function DropSourceInspector.composeSingleSourceRecord(recordItem)
         return format("|cffAEE26A[%s]|r |cffEDF4F7%s|r", resolveExtraLocaleText("srcFaction"), facName), nil
 
     elseif kind == "TK" then
-        local tokName = (locID > 0) and DropSourceInspector.determineReagentName(locID) or resolveExtraLocaleText("srcToken")
+        local tokName = (locID > 0) and DropSourceInspector.determineReagentName(locID) or nil
         local instName = (subID > 0) and DropSourceInspector.determineLocationName(-subID) or nil
         local bossName = (extraID > 0) and DropSourceInspector.determineNpcName(extraID) or nil
-        if instName and bossName then
+        if instName and not tokName then
+            return DropSourceInspector.composeLabeledRecord("C9A4EF", resolveExtraLocaleText("srcToken"), instName, bossName, "F1BD57", coordTxt), -subID
+        elseif instName and bossName then
             return format("|cffC9A4EF[%s]|r |cffEDF4F7%s|r |cff8398A6>|r |cffF1BD57%s|r |cff8398A6·|r |cff4BC8E8%s|r%s", resolveExtraLocaleText("srcToken"), instName, bossName, tokName, coordTxt), -subID
         elseif instName then
             return format("|cffC9A4EF[%s]|r |cffEDF4F7%s|r |cff8398A6·|r |cff4BC8E8%s|r%s", resolveExtraLocaleText("srcToken"), instName, tokName, coordTxt), -subID
+        end
+        if not tokName then
+            return format("|cffC9A4EF[%s]|r%s", resolveExtraLocaleText("srcToken"), coordTxt), nil
         end
         return format("|cffC9A4EF[%s]|r |cff4BC8E8%s|r%s", resolveExtraLocaleText("srcToken"), tokName, coordTxt), nil
 
@@ -901,31 +977,33 @@ function DropSourceInspector.composeSingleSourceRecord(recordItem)
     elseif kind == "V" then
         local locName = DropSourceInspector.determineLocationName(locID)
         local npcName = (subID > 0) and DropSourceInspector.determineNpcName(subID) or nil
-        local body = (locName and npcName) and format("|cffEDF4F7%s|r |cff8398A6>|r |cffAEE26A%s|r", locName, npcName)
-            or format("|cffEDF4F7%s|r", locName or npcName or resolveExtraLocaleText("srcVendor"))
-        return format("|cffAEE26A[%s]|r %s%s", resolveExtraLocaleText("srcVendor"), body, coordTxt), (locID ~= 0 and locID or nil)
+        if npcName and npcName:find("^NPC #") then npcName = nil end
+        return DropSourceInspector.composeLabeledRecord("AEE26A", resolveExtraLocaleText("srcVendor"), locName, npcName, "AEE26A", coordTxt), (locID ~= 0 and locID or nil)
 
     elseif kind == "VN" then
-        local zName = (locStr and locStr ~= "") and locStr or nil
-        local vName = (extraID > 0 and DropSourceInspector.determineNpcName(extraID)) or ((subStr and subStr ~= "") and subStr) or nil
-        if vName and vName:find("^NPC #") and subStr and subStr ~= "" then vName = subStr end
-        local body = (zName and vName) and format("|cffEDF4F7%s|r |cff8398A6>|r |cffAEE26A%s|r", zName, vName)
-            or format("|cffEDF4F7%s|r", zName or vName or resolveExtraLocaleText("srcVendor"))
-        return format("|cffAEE26A[%s]|r %s", resolveExtraLocaleText("srcVendor"), body), nil
+        local zName = DropSourceInspector.dataText(locStr)
+        local vName = (extraID > 0) and DropSourceInspector.determineNpcName(extraID) or nil
+        if vName and vName:find("^NPC #") then vName = nil end
+        vName = vName or DropSourceInspector.dataText(subStr)
+        return DropSourceInspector.composeLabeledRecord("AEE26A", resolveExtraLocaleText("srcVendor"), zName, vName, "AEE26A"), nil
 
     elseif kind == "M" then
         local locName = DropSourceInspector.determineLocationName(locID)
         local npcName = (subID > 0) and DropSourceInspector.determineNpcName(subID) or nil
-        local body = (locName and npcName) and format("|cffEDF4F7%s|r |cff8398A6>|r |cffEA837E%s|r", locName, npcName)
-            or format("|cffEDF4F7%s|r", locName or npcName or resolveExtraLocaleText("srcMob"))
-        return format("|cffEA837E[%s]|r %s%s", resolveExtraLocaleText("srcMob"), body, coordTxt), (locID ~= 0 and locID or nil)
+        if npcName and npcName:find("^NPC #") then npcName = nil end
+        return DropSourceInspector.composeLabeledRecord("EA837E", resolveExtraLocaleText("srcMob"), locName, npcName, "EA837E", coordTxt), (locID ~= 0 and locID or nil)
 
     elseif kind == "O" then
         local locName = DropSourceInspector.determineLocationName(locID)
         local objName = (subID > 0) and DropSourceInspector.determineObjectName(subID) or nil
-        local body = (locName and objName) and format("|cffEDF4F7%s|r |cff8398A6>|r |cff4BC8E8%s|r", locName, objName)
-            or format("|cffEDF4F7%s|r", locName or objName or resolveExtraLocaleText("srcObject"))
-        return format("|cff4BC8E8[%s]|r %s%s", resolveExtraLocaleText("srcObject"), body, coordTxt), (locID ~= 0 and locID or nil)
+        local tagText = format("|cff4BC8E8[%s]|r", resolveExtraLocaleText("srcObject"))
+        if locName and objName then
+            return format("%s |cffEDF4F7%s|r |cff8398A6>|r |cff4BC8E8%s|r%s", tagText, locName, objName, coordTxt), (locID ~= 0 and locID or nil)
+        elseif locName or objName then
+            return format("%s |cffEDF4F7%s|r%s", tagText, locName or objName, coordTxt), (locID ~= 0 and locID or nil)
+        end
+        -- nothing known but the kind: the label alone (never "Object Object")
+        return tagText .. coordTxt, nil
 
     elseif kind == "P" then
         local profName = DropSourceInspector.determineProfessionName(locID) or resolveExtraLocaleText("srcProf")
@@ -937,18 +1015,15 @@ function DropSourceInspector.composeSingleSourceRecord(recordItem)
         return format("|cff4BC8E8[%s]|r |cffEDF4F7%s%s|r", resolveExtraLocaleText("srcProf"), profName, skillTxt), nil
 
     elseif kind == "PVP" then
-        local locName = (locID > 0 and DropSourceInspector.determineLocationName(locID)) or ((coordStr and coordStr ~= "") and coordStr) or resolveExtraLocaleText("srcPvP")
+        local locName = (locID > 0 and DropSourceInspector.determineLocationName(locID)) or DropSourceInspector.dataText(coordStr)
         local cTxt = (locID > 0) and coordTxt or ""
-        return format("|cffEA837E[%s]|r |cffEDF4F7%s|r%s", resolveExtraLocaleText("srcPvP"), locName, cTxt), nil
+        return DropSourceInspector.composeLabeledRecord("EA837E", resolveExtraLocaleText("srcPvP"), locName, nil, nil, cTxt), nil
 
     elseif kind == "H" then
         local userPref = resolveActiveLocale()
-        local hName = (userPref == "koKR" and HOLIDAY_NAMES_KO[locID]) or HOLIDAY_NAMES_EN[locID] or resolveExtraLocaleText("srcHoliday")
+        local hName = (userPref == "koKR" and HOLIDAY_NAMES_KO[locID]) or HOLIDAY_NAMES_EN[locID] or nil
         local mapName = (extraID > 0) and DropSourceInspector.determineLocationName(extraID) or nil
-        if mapName then
-            return format("|cff4BC8E8[%s]|r |cffEDF4F7%s|r |cff8398A6>|r |cffA7B9C5%s|r%s", resolveExtraLocaleText("srcHoliday"), hName, mapName, coordTxt), nil
-        end
-        return format("|cff4BC8E8[%s]|r |cffEDF4F7%s|r%s", resolveExtraLocaleText("srcHoliday"), hName, coordTxt), nil
+        return DropSourceInspector.composeLabeledRecord("4BC8E8", resolveExtraLocaleText("srcHoliday"), hName, mapName, "A7B9C5", coordTxt), nil
 
     elseif kind == "W" then
         return format("|cffA7B9C5[%s]|r", resolveExtraLocaleText("srcWorld")), nil
@@ -985,7 +1060,8 @@ function DropSourceInspector.composeCraftedExtras(rawCraft)
 
     local profName = DropSourceInspector.determineProfessionName(profID) or resolveExtraLocaleText("srcProf")
     local skillTxt = (skillLvl > 0) and format(" (%d)", skillLvl) or ""
-    local catName = (userPref == "koKR") and ((catKo ~= "" and catKo) or catEn) or ((catEn ~= "" and catEn) or catKo)
+    -- Korean text only on a Korean client; English otherwise (never the other way round)
+    local catName = (userPref == "koKR") and ((catKo and catKo ~= "" and catKo) or catEn) or catEn
     local profLine
     if catName and catName ~= "" then
         profLine = format("|cff4BC8E8[%s]|r |cffEDF4F7%s%s|r |cff8398A6· %s|r%s", resolveExtraLocaleText("srcProf"), profName, skillTxt, catName, learnBadge)
@@ -993,7 +1069,7 @@ function DropSourceInspector.composeCraftedExtras(rawCraft)
         profLine = format("|cff4BC8E8[%s]|r |cffEDF4F7%s%s|r%s", resolveExtraLocaleText("srcProf"), profName, skillTxt, learnBadge)
     end
 
-    local rSrc = (userPref == "koKR") and ((srcKo and srcKo ~= "" and srcKo) or srcEn) or ((srcEn and srcEn ~= "" and srcEn) or srcKo)
+    local rSrc = (userPref == "koKR") and ((srcKo and srcKo ~= "" and srcKo) or srcEn) or srcEn
     rSrc = DropSourceInspector.determineFactionRecipeSource(rSrc)
     local recipeSrcLine
     if rSrc and rSrc ~= "" then
@@ -1092,7 +1168,7 @@ function DropSourceInspector.composeItemSources(itemID, itemLink)
                     gProfID = tonumber(locStr) or gProfID
                     gSkill = tonumber(subStr) or gSkill
                     local zID = tonumber(extraStr) or 0
-                    local zName = (zID > 0 and DropSourceInspector.determineLocationName(zID)) or ((coordStr and coordStr ~= "") and coordStr) or nil
+                    local zName = (zID > 0 and DropSourceInspector.determineLocationName(zID)) or DropSourceInspector.dataText(coordStr)
                     if zName then gZones[#gZones + 1] = zName end
                 end
             end
@@ -1301,3 +1377,101 @@ addon.FormatItemSources = DropSourceInspector.composeItemSources
 addon.QueryItemCountSafe = queryItemCountAPI
 addon.FormatDurationShort = DropSourceInspector.composeDurationShort
 addon.GetZoneCollectionSummary = DropSourceInspector.resolveZoneCollectionSummary
+
+-- Names for the shared "drops from" records (creatures and objects), in the
+-- player's language, from this addon's name tables.
+function DropSourceInspector.sharedSourceName(kind, id)
+    id = tonumber(id)
+    if not id or id <= 0 then return nil end
+    if kind == "object" then
+        return DropSourceInspector.determineObjectName(id)
+    elseif kind == "npc" then
+        local npcName = DropSourceInspector.determineNpcName(id)
+        if npcName and not npcName:find("^NPC #") then return npcName end
+    end
+    return nil
+end
+
+do
+    local share = _G.EzWoW_Share
+    if type(share) == "table" then
+        share.nameResolvers = share.nameResolvers or {}
+        table.insert(share.nameResolvers, DropSourceInspector.sharedSourceName)
+    end
+end
+
+-----------------------------------------------------------------------------
+-- Shared Data (optional EzWoW-Data)
+-- The lookup tables above come from Data\SourceDB.lua. When EzWoW-Data is installed and
+-- its table format is the one this file understands, each table is pointed at the shared
+-- copy once its module has loaded. This addon's own modules (item sources, NPC info,
+-- crafting, spell names and titles) are loaded right after login (never during combat; a
+-- load asked for in combat runs when combat ends). The name modules are large, so they are
+-- not loaded for this addon: their tables are used once another addon has loaded them.
+-- Until a module is loaded, and without EzWoW-Data, the bundled tables are used as before.
+-- Tooltip hooks only read addon.<table>; they never load anything.
+-----------------------------------------------------------------------------
+local SHARED_FORMAT = 2
+local SHARED_TABLES = {
+    Core = { instances = "InstanceMapDB" },
+    ItemSources = { sources = "ItemSourceDB", tokens = "TokenRewardDB", mounts = "MountItemDB",
+                    pets = "PetItemDB", toys = "ToyItemDB", zoneCollect = "ZoneCollectDB" },
+    NpcInfo = { npcInfo = "NpcSourceDB", questSources = "QuestSourceDB" },
+    Crafting = { crafted = "CraftedItemDB", spells = "RecipeSpellDB", reagentUsage = "ReagentUsageDB",
+                 recipeItems = "RecipeItemDB" },
+    NameExtras = { spell_koKR = "SpellNameDB_koKR", spell_enUS = "SpellNameDB_enUS", fromEn = "DualNameTitleDB" },
+    ["Names-koKR"] = { npc = "NpcNameDB_koKR", object = "ObjectNameDB_koKR", quest = "QuestNameDB_koKR",
+                       item = "ReagentNameDB_koKR" },
+    ["Names-enUS"] = { npc = "NpcNameDB_enUS", object = "ObjectNameDB_enUS", quest = "QuestNameDB_enUS",
+                       item = "ReagentNameDB_enUS" },
+}
+local SHARED_LOAD = { "ItemSources", "NpcInfo", "Crafting", "NameExtras" }
+local SHARED_IF_LOADED = { "Core", "Names-koKR", "Names-enUS" }
+
+function DropSourceInspector.sharedDataAPI()
+    local D = _G.EzWoW_Data
+    if type(D) ~= "table" or D.formatVersion ~= SHARED_FORMAT then return nil end
+    for _, fn in ipairs({ "Load", "Peek", "OnModuleLoaded" }) do
+        if type(D[fn]) ~= "function" then return nil end
+    end
+    return D
+end
+
+function DropSourceInspector.useSharedModule(moduleName, m)
+    if type(m) ~= "table" or (moduleName ~= "Core" and m.formatVersion ~= SHARED_FORMAT) then return end
+    for sharedName, ownName in pairs(SHARED_TABLES[moduleName]) do
+        local t = m[sharedName]
+        if type(t) == "table" then
+            addon[ownName] = t
+            if ownName == "DualNameTitleDB" then dualTitleReverse = nil end
+        end
+    end
+end
+
+-- modules other addons load (and the always-loaded core): used whenever they are there
+function DropSourceInspector.watchSharedModules()
+    local D = DropSourceInspector.sharedDataAPI()
+    if not D then return end
+    for _, moduleName in ipairs(SHARED_IF_LOADED) do
+        pcall(D.OnModuleLoaded, moduleName, DropSourceInspector.useSharedModule)
+    end
+end
+
+function DropSourceInspector.loadSharedData()
+    local D = DropSourceInspector.sharedDataAPI()
+    if not D then return end
+    for _, moduleName in ipairs(SHARED_LOAD) do
+        pcall(D.Load, moduleName, function(_, ok)
+            if not ok then return end
+            local isOk, m = pcall(D.Peek, moduleName)
+            if isOk then DropSourceInspector.useSharedModule(moduleName, m) end
+        end)
+    end
+end
+
+pcall(DropSourceInspector.watchSharedModules)
+if EventDispatcher and EventDispatcher.attachEvent then
+    EventDispatcher:attachEvent("PLAYER_LOGIN", function()
+        DropSourceInspector.loadSharedData()
+    end)
+end

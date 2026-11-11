@@ -17,9 +17,9 @@ local lineRegions = addon.LineRegions
 local TEXT_HEX = "edf4f7"
 local MUTED_HEX = "a7b9c5"
 
-local TAG_TARGET   = "|cff4BC8E8◆|r|cff000121|r "
-local TAG_TARGETBY = "|cff4BC8E8◆|r|cff000122|r "
-local TAG_GEAR     = "|cff4BC8E8◆|r|cff000120|r "
+local TAG_TARGET   = platformHelper.LineTag("000121")
+local TAG_TARGETBY = platformHelper.LineTag("000122")
+local TAG_GEAR     = platformHelper.LineTag("000120")
 local PAT_TARGET, PAT_TARGETBY, PAT_GEAR = "^" .. TAG_TARGET, "^" .. TAG_TARGETBY, "^" .. TAG_GEAR
 
 local LABELS = {
@@ -250,7 +250,7 @@ function UnitProfileFormatter.playerRows(info, lineList, levelIdx)
     })
 
     if info.guild then
-        rowWidgets[#rowWidgets + 1] = UnitProfileFormatter.join({ "|cffAEE26A◆|r", UnitProfileFormatter.paint("<" .. info.guild .. ">", "c9a4ef"),
+        rowWidgets[#rowWidgets + 1] = UnitProfileFormatter.join({ platformHelper.LineBullet(false, "AEE26A"), UnitProfileFormatter.paint("<" .. info.guild .. ">", "c9a4ef"),
             info.guildRank and UnitProfileFormatter.paint("· " .. info.guildRank, MUTED_HEX) or nil })
     end
 
@@ -267,7 +267,7 @@ function UnitProfileFormatter.playerRows(info, lineList, levelIdx)
     })
 
     if info.zone then
-        rowWidgets[#rowWidgets + 1] = UnitProfileFormatter.join({ "|cff4BC8E8◆|r", UnitProfileFormatter.paint(info.zone, MUTED_HEX) })
+        rowWidgets[#rowWidgets + 1] = UnitProfileFormatter.join({ platformHelper.LineBullet(false), UnitProfileFormatter.paint(info.zone, MUTED_HEX) })
     end
     return rowWidgets
 end
@@ -282,17 +282,17 @@ function UnitProfileFormatter.npcRows(info, lineList, levelIdx)
     rowWidgets[1] = UnitProfileFormatter.join({ raidIcon, quest, UnitProfileFormatter.paint(info.name or UnitProfileFormatter.plain(lineList[1].left), UnitProfileFormatter.hex(ncVal[1], ncVal[2], ncVal[3])) })
 
     if levelIdx and levelIdx >= 3 and lineList[2] and lineList[2].left and lineList[2].left ~= "" then
-        rowWidgets[#rowWidgets + 1] = UnitProfileFormatter.join({ "|cffAEE26A◇|r", UnitProfileFormatter.paint("<" .. UnitProfileFormatter.plain(lineList[2].left) .. ">", "7adad4") })
+        rowWidgets[#rowWidgets + 1] = UnitProfileFormatter.join({ platformHelper.LineBullet(true, "AEE26A"), UnitProfileFormatter.paint("<" .. UnitProfileFormatter.plain(lineList[2].left) .. ">", "7adad4") })
     end
 
     local classification = info.classification
     local tag
     if info.level < 0 or classification == "worldboss" then
-        tag = UnitProfileFormatter.paint("[★ " .. (_G.BOSS or "Boss") .. "]", "ea837e")
+        tag = UnitProfileFormatter.paint("[" .. (_G.BOSS or "Boss") .. "]", "ea837e")
     elseif classification == "rareelite" or classification == "rare" then
-        tag = UnitProfileFormatter.paint("[◆ " .. (_G.GARRISON_MISSION_RARE or _G.ITEM_QUALITY3_DESC or "Rare") .. "]", "c9a4ef")
+        tag = UnitProfileFormatter.paint("[" .. (_G.GARRISON_MISSION_RARE or _G.ITEM_QUALITY3_DESC or "Rare") .. "]", "c9a4ef")
     elseif classification == "elite" then
-        tag = UnitProfileFormatter.paint("[☆ " .. (_G.ELITE or "Elite") .. "]", "f1bd57")
+        tag = UnitProfileFormatter.paint("[" .. (_G.ELITE or "Elite") .. "]", "f1bd57")
     end
     local srVal, sgVal, sbVal = UnitSelectionColor(unit)
     local reactionLabel = info.reaction and _G["FACTION_STANDING_LABEL" .. info.reaction]

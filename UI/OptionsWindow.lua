@@ -10,6 +10,13 @@ local compat = ns.compat
 local addon = EzWoW_Tooltip
 local EventDispatcher = ns.events
 
+-- small down arrow after a drop-down's current value (a texture: the arrow
+-- character is missing from the Latin and Cyrillic game fonts)
+function SettingsDialog.dropdownArrow()
+    local arrow = compat.AtlasIcon("friendslist-categorybutton-arrow-down", 8)
+    return arrow ~= "" and (" " .. arrow) or ""
+end
+
 local DONATE_URL = "https://buymeacoffee.com/qqhrqqhr2"
 local ICON_PATH  = "Interface\\AddOns\\EzWoW-Tooltip\\Media\\Icon"
 
@@ -67,12 +74,12 @@ local L_EN = {
     posCursor       = "Follow Cursor",
     posDefault      = "Game Default",
     posStatic       = "Static Point",
-    dirTopLeft      = "↖ Top Left",
-    dirTopCenter    = "↑ Top Center",
-    dirTopRight     = "↗ Top Right",
-    dirBottomLeft   = "↙ Bottom Left",
-    dirBottomCenter = "↓ Bottom Center",
-    dirBottomRight  = "↘ Bottom Right",
+    dirTopLeft      = "Top Left",
+    dirTopCenter    = "Top Center",
+    dirTopRight     = "Top Right",
+    dirBottomLeft   = "Bottom Left",
+    dirBottomCenter = "Bottom Center",
+    dirBottomRight  = "Bottom Right",
     moveStatic      = "Adjust Static Position",
     hideCombat      = "Hide in combat",
     returnCombat    = "Default pos in combat",
@@ -147,12 +154,12 @@ local LOCALES = {
         posCursor       = "마우스 따라가기",
         posDefault      = "게임 기본 위치",
         posStatic       = "고정 위치",
-        dirTopLeft      = "↖ 상단 왼쪽",
-        dirTopCenter    = "↑ 상단 중앙",
-        dirTopRight     = "↗ 상단 오른쪽",
-        dirBottomLeft   = "↙ 하단 왼쪽",
-        dirBottomCenter = "↓ 하단 중앙",
-        dirBottomRight  = "↘ 하단 오른쪽",
+        dirTopLeft      = "상단 왼쪽",
+        dirTopCenter    = "상단 중앙",
+        dirTopRight     = "상단 오른쪽",
+        dirBottomLeft   = "하단 왼쪽",
+        dirBottomCenter = "하단 중앙",
+        dirBottomRight  = "하단 오른쪽",
         moveStatic      = "고정 위치 조절",
         hideCombat      = "전투 중 툴팁 숨기기",
         returnCombat    = "전투 중 기본 위치로 전환",
@@ -224,12 +231,12 @@ local LOCALES = {
         posCursor       = "Mauszeiger folgen",
         posDefault      = "Spielstandard",
         posStatic       = "Feste Position",
-        dirTopLeft      = "↖ Oben links",
-        dirTopCenter    = "↑ Oben mitte",
-        dirTopRight     = "↗ Oben rechts",
-        dirBottomLeft   = "↙ Unten links",
-        dirBottomCenter = "↓ Unten mitte",
-        dirBottomRight  = "↘ Unten rechts",
+        dirTopLeft      = "Oben links",
+        dirTopCenter    = "Oben mitte",
+        dirTopRight     = "Oben rechts",
+        dirBottomLeft   = "Unten links",
+        dirBottomCenter = "Unten mitte",
+        dirBottomRight  = "Unten rechts",
         moveStatic      = "Feste Pos. anpassen",
         hideCombat      = "Im Kampf ausblenden",
         returnCombat    = "Im Kampf Standardposition",
@@ -299,12 +306,12 @@ local LOCALES = {
         posCursor       = "Suivre le curseur",
         posDefault      = "Position par défaut",
         posStatic       = "Position fixe",
-        dirTopLeft      = "↖ Haut gauche",
-        dirTopCenter    = "↑ Haut centre",
-        dirTopRight     = "↗ Haut droite",
-        dirBottomLeft   = "↙ Bas gauche",
-        dirBottomCenter = "↓ Bas centre",
-        dirBottomRight  = "↘ Bas droite",
+        dirTopLeft      = "Haut gauche",
+        dirTopCenter    = "Haut centre",
+        dirTopRight     = "Haut droite",
+        dirBottomLeft   = "Bas gauche",
+        dirBottomCenter = "Bas centre",
+        dirBottomRight  = "Bas droite",
         moveStatic      = "Ajuster pos. fixe",
         hideCombat      = "Masquer en combat",
         returnCombat    = "Pos. par défaut en combat",
@@ -374,12 +381,12 @@ local LOCALES = {
         posCursor       = "Seguir al cursor",
         posDefault      = "Por defecto",
         posStatic       = "Posición fija",
-        dirTopLeft      = "↖ Arriba izq.",
-        dirTopCenter    = "↑ Arriba centro",
-        dirTopRight     = "↗ Arriba der.",
-        dirBottomLeft   = "↙ Abajo izq.",
-        dirBottomCenter = "↓ Abajo centro",
-        dirBottomRight  = "↘ Abajo der.",
+        dirTopLeft      = "Arriba izq.",
+        dirTopCenter    = "Arriba centro",
+        dirTopRight     = "Arriba der.",
+        dirBottomLeft   = "Abajo izq.",
+        dirBottomCenter = "Abajo centro",
+        dirBottomRight  = "Abajo der.",
         moveStatic      = "Ajustar pos. fija",
         hideCombat      = "Ocultar en combate",
         returnCombat    = "Pos. normal en combate",
@@ -449,12 +456,12 @@ local LOCALES = {
         posCursor       = "За курсором",
         posDefault      = "По умолчанию",
         posStatic       = "Фиксированная",
-        dirTopLeft      = "↖ Сверху слева",
-        dirTopCenter    = "↑ Сверху центр",
-        dirTopRight     = "↗ Сверху справа",
-        dirBottomLeft   = "↙ Снизу слева",
-        dirBottomCenter = "↓ Снизу центр",
-        dirBottomRight  = "↘ Снизу справа",
+        dirTopLeft      = "Сверху слева",
+        dirTopCenter    = "Сверху центр",
+        dirTopRight     = "Сверху справа",
+        dirBottomLeft   = "Снизу слева",
+        dirBottomCenter = "Снизу центр",
+        dirBottomRight  = "Снизу справа",
         moveStatic      = "Настроить позицию",
         hideCombat      = "Скрывать в бою",
         returnCombat    = "Стандарт. поз. в бою",
@@ -524,12 +531,12 @@ local LOCALES = {
         posCursor       = "跟随鼠标游标",
         posDefault      = "系统默认位置",
         posStatic       = "固定锚点位置",
-        dirTopLeft      = "↖ 左上方",
-        dirTopCenter    = "↑ 正上方",
-        dirTopRight     = "↗ 右上方",
-        dirBottomLeft   = "↙ 左下方",
-        dirBottomCenter = "↓ 正下方",
-        dirBottomRight  = "↘ 右下方",
+        dirTopLeft      = "左上方",
+        dirTopCenter    = "正上方",
+        dirTopRight     = "右上方",
+        dirBottomLeft   = "左下方",
+        dirBottomCenter = "正下方",
+        dirBottomRight  = "右下方",
         moveStatic      = "调整固定位置",
         hideCombat      = "战斗中隐藏提示",
         returnCombat    = "战斗中恢复默认位置",
@@ -599,12 +606,12 @@ local LOCALES = {
         posCursor       = "跟隨滑鼠游標",
         posDefault      = "系統預設位置",
         posStatic       = "固定錨點位置",
-        dirTopLeft      = "↖ 左上方",
-        dirTopCenter    = "↑ 正上方",
-        dirTopRight     = "↗ 右上方",
-        dirBottomLeft   = "↙ 左下方",
-        dirBottomCenter = "↓ 正下方",
-        dirBottomRight  = "↘ 右下方",
+        dirTopLeft      = "左上方",
+        dirTopCenter    = "正上方",
+        dirTopRight     = "右上方",
+        dirBottomLeft   = "左下方",
+        dirBottomCenter = "正下方",
+        dirBottomRight  = "右下方",
         moveStatic      = "調整固定位置",
         hideCombat      = "戰鬥中隱藏提示",
         returnCombat    = "戰鬥中恢復預設位置",
@@ -1780,9 +1787,9 @@ function SettingsDialog.launchConfigWindow()
 
     refreshLabels = function()
         SettingsDialog.fitFontStringToWidth(subtitleRegion, SettingsDialog.resolveOptionsLocaleText("subtitle"), 720, 10, 8)
-        SettingsDialog.fitFontStringToWidth(langText, SettingsDialog.resolveOptionsLocaleText("language") .. ": " .. resolveCurrentLangLabel() .. " ▼", 174, 12, 9)
+        SettingsDialog.fitFontStringToWidth(langText, SettingsDialog.resolveOptionsLocaleText("language") .. ": " .. resolveCurrentLangLabel() .. SettingsDialog.dropdownArrow(), 174, 12, 9)
         local hasAngular = (addon.db.general.borderCorner == "angular")
-        SettingsDialog.fitFontStringToWidth(borderText, SettingsDialog.resolveOptionsLocaleText("borderStyle") .. ": " .. SettingsDialog.resolveOptionsLocaleText(hasAngular and "borderAngular" or "borderDefault") .. " ▼", 174, 12, 9)
+        SettingsDialog.fitFontStringToWidth(borderText, SettingsDialog.resolveOptionsLocaleText("borderStyle") .. ": " .. SettingsDialog.resolveOptionsLocaleText(hasAngular and "borderAngular" or "borderDefault") .. SettingsDialog.dropdownArrow(), 174, 12, 9)
 
         SettingsDialog.fitFontStringToWidth(secGenHeader, SettingsDialog.resolveOptionsLocaleText("secGeneral"), 376, 13, 10)
         SettingsDialog.fitFontStringToWidth(scaleLabel, SettingsDialog.resolveOptionsLocaleText("scale"), 82, 12, 9)
@@ -1796,7 +1803,7 @@ function SettingsDialog.launchConfigWindow()
         local hasCursorMode = (positionData == "cursor" or positionData == "cursorRight")
         local activeDir = SettingsDialog.resolveActiveCursorDir(anc)
         local posKey = POS_KEY_MAP[positionData] or "posCursor"
-        SettingsDialog.fitFontStringToWidth(posText, SettingsDialog.resolveOptionsLocaleText("position") .. ": " .. SettingsDialog.resolveOptionsLocaleText(posKey) .. " ▼", 212, 12, 9)
+        SettingsDialog.fitFontStringToWidth(posText, SettingsDialog.resolveOptionsLocaleText("position") .. ": " .. SettingsDialog.resolveOptionsLocaleText(posKey) .. SettingsDialog.dropdownArrow(), 212, 12, 9)
         SettingsDialog.fitFontStringToWidth(moveStaticText, SettingsDialog.resolveOptionsLocaleText("moveStatic"), 136, 12, 9)
 
         for _, item in ipairs(cursorDirBtns) do

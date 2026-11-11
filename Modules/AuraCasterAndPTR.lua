@@ -20,7 +20,7 @@ local appendDualNameToTitle = addon.AppendDualNameToTitle
 -----------------------------------------------------------------------------
 -- Synchronize Aura Caster Cvar
 -----------------------------------------------------------------------------
-local CASTER_TAG = "|cff4BC8E8◆|r|cff00010a|r "
+local CASTER_TAG = compat.LineTag("00010a")
 
 function addon.SynchronizeAuraCasterCVar()
     local sCfg = (addon.db and addon.db.spell) or (EzWoW_TooltipDB and EzWoW_TooltipDB.spell)

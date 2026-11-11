@@ -234,6 +234,13 @@ So that nothing shows twice, these addons take over the matching feature when th
 
 ---
 
+## Data credits / 데이터 출처
+
+- Most item drop and vendor sources come from **Classic-DB** of the CMaNGOS project ([cmangos/classic-db](https://github.com/cmangos/classic-db), GNU GPL v3). See `LICENSE-DATA.md` and `LICENSE-DATA-NOTICE.md`.
+- 아이템 드롭처·판매처 상당수는 CMaNGOS 프로젝트의 **Classic-DB**([cmangos/classic-db](https://github.com/cmangos/classic-db), GNU GPL v3)에서 가져왔습니다. `LICENSE-DATA.md`, `LICENSE-DATA-NOTICE.md`를 참고하세요.
+
+---
+
 ## Support / 후원
 
 If you find this addon useful, you can support its development.

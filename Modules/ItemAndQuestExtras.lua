@@ -39,22 +39,23 @@ end
 local queryItemCountAPI = addon.QueryItemCountSafe
 local resolveZoneCollectionSummary = addon.GetZoneCollectionSummary
 
+local lineTag = compat.LineTag
 local ITEM_TAGS = {
-    BAG_COUNT  = "|cff4BC8E8◆|r|cff000107|r ",
-    MAX_STACK  = "|cff4BC8E8◆|r|cff000108|r ",
-    SELL_PRICE = "|cff4BC8E8◆|r|cff000109|r ",
-    ITEM_ILVL  = "|cff4BC8E8◆|r|cff00010a|r ",
-    COLLECT    = "|cff4BC8E8◆|r|cff00010e|r ",
-    SOURCE1    = "|cff4BC8E8◆|r|cff00010f|r ",
-    SOURCE2    = "|cff4BC8E8◇|r|cff000110|r ",
-    QUEST_SRC  = "|cff4BC8E8◆|r|cff000111|r ",
-    REC_SRC    = "|cff4BC8E8◇|r|cff000112|r ",
-    REAGENTS   = "|cff4BC8E8◇|r|cff000113|r ",
-    USED_IN    = "|cff4BC8E8◇|r|cff000114|r ",
-    ZONE_COL   = "|cff4BC8E8◆|r|cff000115|r ",
-    ZONE_MISS  = "|cff4BC8E8◇|r|cff000116|r ",
-    TOKEN_RWD  = "|cff4BC8E8◇|r|cff000117|r ",
-    AH_PRICE   = "|cff4BC8E8◆|r|cff000118|r ",
+    BAG_COUNT  = lineTag("000107"),
+    MAX_STACK  = lineTag("000108"),
+    SELL_PRICE = lineTag("000109"),
+    ITEM_ILVL  = lineTag("00010a"),
+    COLLECT    = lineTag("00010e"),
+    SOURCE1    = lineTag("00010f"),
+    SOURCE2    = lineTag("000110", true),
+    QUEST_SRC  = lineTag("000111"),
+    REC_SRC    = lineTag("000112", true),
+    REAGENTS   = lineTag("000113", true),
+    USED_IN    = lineTag("000114", true),
+    ZONE_COL   = lineTag("000115"),
+    ZONE_MISS  = lineTag("000116", true),
+    TOKEN_RWD  = lineTag("000117", true),
+    AH_PRICE   = lineTag("000118"),
 }
 
 -----------------------------------------------------------------------------
@@ -291,7 +292,7 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
                         if #rwdParts < rwdMax then
                             local rName = determineReagentName(rid)
                             local hasCol = verifyItemCollectionStatus(rid, nil, true)
-                            local colMark = hasCol and " |cffAEE26A✓|r" or ""
+                            local colMark = hasCol and (" " .. compat.CheckIcon()) or ""
                             rwdParts[#rwdParts + 1] = format("|cffEDF4F7%s|r%s", rName, colMark)
                         end
                     end

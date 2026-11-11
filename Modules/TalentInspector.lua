@@ -13,7 +13,8 @@ local compat = select(2, ...).compat
 local nosecret = compat.nosecret
 local issecret = compat.issecret
 
-local TALENT_PREFIX_PATTERN = "^|cffAEE26A★|r"
+local TALENT_TAG = compat.LineTag("000123", false, "AEE26A")
+local TALENT_PREFIX_PATTERN = "^" .. TALENT_TAG
 local CACHE_TTL = 120
 
 local FOREVER_CLASS_SPECS = {
@@ -273,124 +274,161 @@ function TalentTreeInspector.composeTreeSummary(class, pts1, pts2, pts3, customN
 end
 
 -----------------------------------------------------------------------------
--- Extract Classic Talent Tabs
+-- Talent point limits
+-- One point per level from level 10 (51 at level 60). A count above what the
+-- unit's level allows was read from the wrong data and is never shown.
 -----------------------------------------------------------------------------
-function TalentTreeInspector.extractClassicTalentTabs(class, isInspect)
-    if not GetNumTalentTabs or not GetTalentTabInfo then return nil end
+local MAX_TALENT_POINTS = 51
+
+function TalentTreeInspector.maxPointsFor(unit)
+    local level = unit and nosecret(UnitLevel(unit))
+    if type(level) == "number" and level > 0 then
+        return math.max(0, math.min(MAX_TALENT_POINTS, level - 9))
+    end
+    return MAX_TALENT_POINTS
+end
+
+function TalentTreeInspector.isPlausibleTotal(total, unit)
+    return type(total) == "number" and total > 0 and total <= TalentTreeInspector.maxPointsFor(unit)
+end
+
+-----------------------------------------------------------------------------
+-- Extract Classic Talent Tabs (GetTalentTabInfo; clients without trait trees)
+-- Returns the summary text plus the three point counts.
+-----------------------------------------------------------------------------
+function TalentTreeInspector.readClassicTalentTabs(isInspect)
+    if type(GetNumTalentTabs) ~= "function" or type(GetTalentTabInfo) ~= "function" then return nil end
     local isCallOk, numTabs = pcall(GetNumTalentTabs, isInspect)
-    if not isCallOk or type(numTabs) ~= "number" or numTabs < 1 then return nil end
+    numTabs = isCallOk and nosecret(numTabs)
+    if type(numTabs) ~= "number" or numTabs < 1 then return nil end
     local pts = { 0, 0, 0 }
     local names, icons = {}, {}
-    for tabWidget = 1, math.min(numTabs, 3) do
-        local queryToken, a1Val, a2Val, a3Val, a4Val, a5Val = pcall(GetTalentTabInfo, tabWidget, isInspect)
-        if queryToken and a1Val ~= nil then
+    for tabIndex = 1, math.min(numTabs, 3) do
+        local queryOk, a1Val, a2Val, a3Val, a4Val, a5Val = pcall(GetTalentTabInfo, tabIndex, isInspect)
+        if queryOk and a1Val ~= nil and not compat.anysecret(a1Val, a2Val, a3Val, a4Val, a5Val) then
             local displayName, icon, spent
             if type(a1Val) == "number" then
                 displayName, icon, spent = a2Val, a4Val, tonumber(a5Val) or 0
             else
                 displayName, icon, spent = a1Val, a2Val, tonumber(a3Val) or 0
             end
-            if spent == 0 and GetNumTalents and GetTalentInfo then
-                local nok, nTalents = pcall(GetNumTalents, tabWidget, isInspect)
+            if spent == 0 and type(GetNumTalents) == "function" and type(GetTalentInfo) == "function" then
+                local nok, nTalents = pcall(GetNumTalents, tabIndex, isInspect)
                 if nok and type(nTalents) == "number" then
                     for index = 1, nTalents do
-                        local iok, r1Val, _, _, _, r5Val = pcall(GetTalentInfo, tabWidget, index, isInspect)
+                        local iok, r1Val, _, _, _, r5Val = pcall(GetTalentInfo, tabIndex, index, isInspect)
                         if iok then
                             if type(r1Val) == "table" then
-                                spent = spent + (tonumber(r1Val.rank) or 0)
+                                spent = spent + (tonumber(nosecret(r1Val.rank)) or 0)
                             else
-                                spent = spent + (tonumber(r5Val) or 0)
+                                spent = spent + (tonumber(nosecret(r5Val)) or 0)
                             end
                         end
                     end
                 end
             end
-            pts[tabWidget] = spent
-            names[tabWidget] = displayName
-            icons[tabWidget] = icon
+            pts[tabIndex] = spent
+            names[tabIndex] = type(displayName) == "string" and displayName or nil
+            icons[tabIndex] = icon
         end
     end
+    return pts, names, icons
+end
+
+function TalentTreeInspector.extractClassicTalentTabs(class, isInspect, unit)
+    local pts, names, icons = TalentTreeInspector.readClassicTalentTabs(isInspect)
+    if not pts then return nil end
     local grandTotal = pts[1] + pts[2] + pts[3]
-    if grandTotal > 0 or not isInspect then
-        return TalentTreeInspector.composeTreeSummary(class, pts[1], pts[2], pts[3], names, icons)
+    if isInspect then
+        if not TalentTreeInspector.isPlausibleTotal(grandTotal, unit) then return nil end
+        -- Some clients answer an inspect query with the player's own talents:
+        -- the same three numbers as our own are not taken as the other unit's.
+        local own = TalentTreeInspector.readClassicTalentTabs(false)
+        if own and own[1] == pts[1] and own[2] == pts[2] and own[3] == pts[3] then return nil end
+    elseif grandTotal > TalentTreeInspector.maxPointsFor("player") then
+        return nil
     end
-    return nil
+    return TalentTreeInspector.composeTreeSummary(class, pts[1], pts[2], pts[3], names, icons)
 end
 
 -----------------------------------------------------------------------------
 -- Extract Single Trait Config
+-- On this client each class has one trait tree that holds its three talent
+-- trees side by side (four columns each, a wide gap between the trees).
 -----------------------------------------------------------------------------
-function TalentTreeInspector.extractSingleTraitConfig(configID, class, isInspect)
-    if not configID then return nil end
-    local isCallOk, configInfo = pcall(C_Traits.GetConfigInfo, configID)
-    if not isCallOk or not configInfo or not configInfo.treeIDs or #configInfo.treeIDs == 0 then
-        return nil
-    end
-
-    local function resolveNodeRanksSpent(nodeID, apiInfo)
-        if not apiInfo or not apiInfo.isVisible then return 0 end
-        if apiInfo.type and Enum and Enum.TraitNodeType and apiInfo.type == Enum.TraitNodeType.SubTreeSelection then
-            return 0
-        end
-        if apiInfo.isFree then return 0 end
-        local purchased = tonumber(apiInfo.ranksPurchased) or 0
-        if purchased > 0 then return purchased end
-
-        local candidateRank = 0
-        local committed = apiInfo.entryIDsWithCommittedRanks
-        if committed and #committed > 0 then
-            candidateRank = tonumber(apiInfo.activeRank) or tonumber(apiInfo.currentRank) or 0
-        elseif isInspect then
-            candidateRank = tonumber(apiInfo.currentRank)
-                or tonumber(apiInfo.activeRank)
-                or (apiInfo.activeEntry and tonumber(apiInfo.activeEntry.rank))
-                or 0
-        end
-        if candidateRank > 0 then
-            if C_Traits.GetNodeCost then
-                local cok, costs = pcall(C_Traits.GetNodeCost, configID, nodeID)
-                if cok and type(costs) == "table" and #costs == 0 then
-                    return 0
-                end
-            end
-            return candidateRank
-        end
+function TalentTreeInspector.resolveNodeRanksSpent(configID, nodeID, apiInfo, isInspect)
+    if not apiInfo or not nosecret(apiInfo.isVisible) then return 0 end
+    if apiInfo.type and Enum and Enum.TraitNodeType and apiInfo.type == Enum.TraitNodeType.SubTreeSelection then
         return 0
     end
+    if nosecret(apiInfo.isFree) then return 0 end
+    local purchased = tonumber(nosecret(apiInfo.ranksPurchased))
+    if purchased then return math.max(0, purchased) end
 
-    if #configInfo.treeIDs >= 3 then
-        local pts = { 0, 0, 0 }
-        local anyNode = false
-        for tiVal = 1, 3 do
-            local nok, nodeList2 = pcall(C_Traits.GetTreeNodes, configInfo.treeIDs[tiVal])
-            if nok and type(nodeList2) == "table" then
-                for _, nodeID in ipairs(nodeList2) do
-                    local iok, apiInfo = pcall(C_Traits.GetNodeInfo, configID, nodeID)
-                    if iok and apiInfo and apiInfo.isVisible then
-                        anyNode = true
-                        pts[tiVal] = pts[tiVal] + resolveNodeRanksSpent(nodeID, apiInfo)
-                    end
-                end
+    local candidateRank = 0
+    local committed = apiInfo.entryIDsWithCommittedRanks
+    if type(committed) == "table" and #committed > 0 then
+        candidateRank = tonumber(nosecret(apiInfo.activeRank)) or tonumber(nosecret(apiInfo.currentRank)) or 0
+    elseif isInspect then
+        candidateRank = tonumber(nosecret(apiInfo.currentRank))
+            or tonumber(nosecret(apiInfo.activeRank))
+            or (type(apiInfo.activeEntry) == "table" and tonumber(nosecret(apiInfo.activeEntry.rank)))
+            or 0
+    end
+    if candidateRank > 0 then
+        if C_Traits.GetNodeCost then
+            local cok, costs = pcall(C_Traits.GetNodeCost, configID, nodeID)
+            if cok and type(costs) == "table" and #costs == 0 then
+                return 0
             end
         end
-        if anyNode and (pts[1] + pts[2] + pts[3] > 0 or not isInspect) then
-            return TalentTreeInspector.composeTreeSummary(class, pts[1], pts[2], pts[3])
+        return candidateRank
+    end
+    return 0
+end
+
+-- Column positions -> the three trees. The gaps between trees are several
+-- times the gap between columns; the first two such gaps from the left split
+-- the trees, and anything further right (a misplaced node) counts as the
+-- third tree.
+function TalentTreeInspector.splitColumnsIntoTrees(xsVal)
+    if #xsVal < 3 then
+        local minX, maxX = xsVal[1], xsVal[#xsVal]
+        local span = math.max(1, maxX - minX)
+        return minX + span / 3, minX + 2 * span / 3
+    end
+    local gaps = {}
+    for index = 1, #xsVal - 1 do
+        gaps[#gaps + 1] = xsVal[index + 1] - xsVal[index]
+    end
+    local sortedGaps = {}
+    for index = 1, #gaps do sortedGaps[index] = gaps[index] end
+    table.sort(sortedGaps)
+    local typicalGap = sortedGaps[math.max(1, math.floor((#sortedGaps + 1) / 2))]
+    local splits = {}
+    if typicalGap and typicalGap > 0 then
+        for index = 1, #gaps do
+            if gaps[index] >= typicalGap * 2.5 then
+                splits[#splits + 1] = xsVal[index]
+                if #splits == 2 then break end
+            end
         end
     end
+    if #splits == 2 then return splits[1], splits[2] end
+    return xsVal[math.max(1, math.floor(#xsVal / 3))], xsVal[math.max(2, math.floor(2 * #xsVal / 3))]
+end
 
-    local treeID = configInfo.treeIDs[1]
+function TalentTreeInspector.countTreePoints(configID, treeID, isInspect)
     local nok, nodeIDs = pcall(C_Traits.GetTreeNodes, treeID)
     if not nok or type(nodeIDs) ~= "table" or #nodeIDs == 0 then return nil end
-
     local nodeList = {}
     local xSet, xsVal = {}, {}
     for _, nodeID in ipairs(nodeIDs) do
         local iok, apiInfo = pcall(C_Traits.GetNodeInfo, configID, nodeID)
-        if iok and apiInfo and apiInfo.isVisible and not apiInfo.subTreeID then
-            local coordX = tonumber(apiInfo.posX) or 0
+        if iok and type(apiInfo) == "table" and nosecret(apiInfo.isVisible) and not apiInfo.subTreeID then
+            local coordX = tonumber(nosecret(apiInfo.posX)) or 0
             if coordX > 0 then
-                local spent = resolveNodeRanksSpent(nodeID, apiInfo)
-                nodeList[#nodeList + 1] = { x = coordX, spent = spent }
+                nodeList[#nodeList + 1] = { x = coordX, spent = TalentTreeInspector.resolveNodeRanksSpent(configID, nodeID, apiInfo, isInspect) }
                 if not xSet[coordX] then
                     xSet[coordX] = true
                     xsVal[#xsVal + 1] = coordX
@@ -398,39 +436,9 @@ function TalentTreeInspector.extractSingleTraitConfig(configID, class, isInspect
             end
         end
     end
-
     if #nodeList == 0 then return nil end
     table.sort(xsVal)
-
-    local split1, split2
-    if #xsVal >= 6 then
-        local gaps = {}
-        local minGap = math.huge
-        for index = 1, #xsVal - 1 do
-            local greenVal = xsVal[index + 1] - xsVal[index]
-            gaps[#gaps + 1] = { idx = index, gap = greenVal }
-            if greenVal > 0 and greenVal < minGap then minGap = greenVal end
-        end
-        table.sort(gaps, function(a, b) return a.gap > b.gap end)
-        if gaps[1] and gaps[2] and gaps[2].gap > minGap * 1.15 then
-            local i1Val = math.min(gaps[1].idx, gaps[2].idx)
-            local i2Val = math.max(gaps[1].idx, gaps[2].idx)
-            split1 = xsVal[i1Val]
-            split2 = xsVal[i2Val]
-        end
-    end
-    if not split1 or not split2 then
-        if #xsVal >= 3 then
-            split1 = xsVal[math.max(1, math.floor(#xsVal / 3))]
-            split2 = xsVal[math.max(2, math.floor(2 * #xsVal / 3))]
-        else
-            local minX, maxX = xsVal[1], xsVal[#xsVal]
-            local span = math.max(1, maxX - minX)
-            split1 = minX + span / 3
-            split2 = minX + 2 * span / 3
-        end
-    end
-
+    local split1, split2 = TalentTreeInspector.splitColumnsIntoTrees(xsVal)
     local pts = { 0, 0, 0 }
     for _, nodeEntry in ipairs(nodeList) do
         if nodeEntry.x <= split1 then
@@ -441,12 +449,34 @@ function TalentTreeInspector.extractSingleTraitConfig(configID, class, isInspect
             pts[3] = pts[3] + nodeEntry.spent
         end
     end
+    return pts, #nodeList
+end
+
+function TalentTreeInspector.extractSingleTraitConfig(configID, class, isInspect, unit)
+    if not configID or not C_Traits then return nil end
+    local isCallOk, configInfo = pcall(C_Traits.GetConfigInfo, configID)
+    if not isCallOk or type(configInfo) ~= "table" or type(configInfo.treeIDs) ~= "table" or #configInfo.treeIDs == 0 then
+        return nil
+    end
+
+    local pts
+    -- the class tree is the largest tree of the config
+    local bestCount = 0
+    for _, treeID in ipairs(configInfo.treeIDs) do
+        local treePts, nodeCount = TalentTreeInspector.countTreePoints(configID, treeID, isInspect)
+        if treePts and nodeCount > bestCount then
+            pts, bestCount = treePts, nodeCount
+        end
+    end
+    if not pts then return nil end
 
     local grandTotal = pts[1] + pts[2] + pts[3]
-    if grandTotal > 0 or not isInspect then
-        return TalentTreeInspector.composeTreeSummary(class, pts[1], pts[2], pts[3])
+    if isInspect then
+        if not TalentTreeInspector.isPlausibleTotal(grandTotal, unit) then return nil end
+    elseif grandTotal > TalentTreeInspector.maxPointsFor("player") then
+        return nil
     end
-    return nil
+    return TalentTreeInspector.composeTreeSummary(class, pts[1], pts[2], pts[3])
 end
 
 -- For other EzWoW addons: the name of the player's main talent tree ("Feral"),
@@ -459,28 +489,31 @@ function addon.GetPlayerTalentTreeName()
     return TalentTreeInspector.lastPrimaryName
 end
 
-function TalentTreeInspector.extractTraitsTalentTree(class, isInspect)
+function TalentTreeInspector.extractTraitsTalentTree(class, isInspect, unit)
     if not C_Traits or not C_Traits.GetConfigInfo or not C_Traits.GetTreeNodes or not C_Traits.GetNodeInfo then
         return nil
     end
     if not isInspect then
-        local configID = C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_ClassTalents.GetActiveConfigID()
-        return TalentTreeInspector.extractSingleTraitConfig(configID, class, false)
+        local okID, configID = false, nil
+        if C_ClassTalents and C_ClassTalents.GetActiveConfigID then
+            okID, configID = pcall(C_ClassTalents.GetActiveConfigID)
+        end
+        return TalentTreeInspector.extractSingleTraitConfig(okID and nosecret(configID) or nil, class, false, "player")
     end
-    
+
+    -- the inspected unit's talents (read only after INSPECT_READY for it)
     local tcVal = Constants and Constants.TraitConsts
-    local candidates = {
-        tcVal and tcVal.INSPECT_TRAIT_CONFIG_ID or -1,
-        (C_ClassTalents and C_ClassTalents.GetInspectConfigID and C_ClassTalents.GetInspectConfigID()) or nil,
-        tcVal and tcVal.VIEW_TRAIT_CONFIG_ID or -3,
-        -2,
-    }
+    local candidates = { (tcVal and tcVal.INSPECT_TRAIT_CONFIG_ID) or -1 }
+    if C_ClassTalents and C_ClassTalents.GetInspectConfigID then
+        local okID, inspectID = pcall(C_ClassTalents.GetInspectConfigID)
+        if okID and nosecret(inspectID) then candidates[#candidates + 1] = inspectID end
+    end
     local visitedMap = {}
     for _, cid in ipairs(candidates) do
         if cid and not visitedMap[cid] then
             visitedMap[cid] = true
-            local extractSafeTooltipText, hasFinal = TalentTreeInspector.extractSingleTraitConfig(cid, class, true)
-            if extractSafeTooltipText then return extractSafeTooltipText, hasFinal end
+            local summaryText, hasFinal = TalentTreeInspector.extractSingleTraitConfig(cid, class, true, unit)
+            if summaryText then return summaryText, hasFinal end
         end
     end
     return nil
@@ -619,10 +652,16 @@ end
 -----------------------------------------------------------------------------
 -- Determine Unit For Guid
 -----------------------------------------------------------------------------
-local talentCache = {} 
+local talentCache = {}
 local shownGUID = nil
 local pendingGUID = nil
 local lastInspectTime = 0
+-- Whose inspect data the client holds: the unit of the last inspect request
+-- (ours or anyone's) and the unit INSPECT_READY last arrived for. Inspect
+-- data is read only when both are the unit asked about, so another unit's
+-- talents (or our own) are never shown for it.
+local inspectRequestGUID = nil
+local inspectReadyGUID = nil
 
 function TalentTreeInspector.determineUnitForGUID(guid)
     if not guid or issecret(guid) then return nil end
@@ -656,6 +695,10 @@ function TalentTreeInspector.determineUnitForGUID(guid)
     return nil
 end
 
+function TalentTreeInspector.hasInspectDataFor(guid)
+    return guid ~= nil and inspectReadyGUID == guid and inspectRequestGUID == guid
+end
+
 function TalentTreeInspector.resolveUnitTalentText(unit, guid, isInspectReady)
     if not unit or not UnitExists(unit) or not nosecret(UnitIsPlayer(unit)) then return nil end
     local class = nosecret(select(2, UnitClass(unit)))
@@ -663,8 +706,8 @@ function TalentTreeInspector.resolveUnitTalentText(unit, guid, isInspectReady)
 
     local hasSelf = nosecret(UnitIsUnit(unit, "player"))
     if hasSelf then
-        local extractSafeTooltipText = TalentTreeInspector.extractClassicTalentTabs(class, false)
-            or TalentTreeInspector.extractTraitsTalentTree(class, false)
+        local extractSafeTooltipText = TalentTreeInspector.extractTraitsTalentTree(class, false)
+            or TalentTreeInspector.extractClassicTalentTabs(class, false, "player")
             or TalentTreeInspector.extractSpecAndGearFallback("player", class, false, true)
         if extractSafeTooltipText and guid then
             talentCache[guid] = { text = extractSafeTooltipText, time = GetTime(), final = true }
@@ -678,10 +721,10 @@ function TalentTreeInspector.resolveUnitTalentText(unit, guid, isInspectReady)
         return cached.text
     end
 
-    if isInspectReady then
-        local extractSafeTooltipText, hasFinal = TalentTreeInspector.extractClassicTalentTabs(class, true)
+    if isInspectReady and TalentTreeInspector.hasInspectDataFor(guid) then
+        local extractSafeTooltipText, hasFinal = TalentTreeInspector.extractTraitsTalentTree(class, true, unit)
         if not extractSafeTooltipText then
-            extractSafeTooltipText, hasFinal = TalentTreeInspector.extractTraitsTalentTree(class, true)
+            extractSafeTooltipText, hasFinal = TalentTreeInspector.extractClassicTalentTabs(class, true, unit)
         end
         if not extractSafeTooltipText then
             extractSafeTooltipText, hasFinal = TalentTreeInspector.extractSpecAndGearFallback(unit, class, true, true)
@@ -692,6 +735,8 @@ function TalentTreeInspector.resolveUnitTalentText(unit, guid, isInspectReady)
         end
     end
 
+    -- no inspect data for this unit yet: a guess from auras / gear (no numbers)
+    if cached and cached.final then return cached.text end
     local quickText = TalentTreeInspector.extractSpecAndGearFallback(unit, class, true, false)
     if quickText and guid and not cached then
         talentCache[guid] = { text = quickText, time = currentTime, final = false }
@@ -703,7 +748,7 @@ function TalentTreeInspector.commitTalentLineToTooltip(tip, extractSafeTooltipTe
     if not tip then return end
     local display = (extractSafeTooltipText and extractSafeTooltipText ~= "") and extractSafeTooltipText or "|cff8398A6...|r"
     local formatLocalizedLabel = (addon.L and addon.L.Talent) or "특성"
-    local fullText = format("|cffAEE26A★|r |cffA7B9C5%s:|r %s", formatLocalizedLabel, display)
+    local fullText = TALENT_TAG .. format("|cffA7B9C5%s:|r %s", formatLocalizedLabel, display)
     if addon.InsertOrUpdateTooltipLine then
         addon:InsertOrUpdateTooltipLine(tip, TALENT_PREFIX_PATTERN, fullText)
     else
@@ -717,14 +762,14 @@ function TalentTreeInspector.commitTalentLineToTooltip(tip, extractSafeTooltipTe
     end
 end
 
+function TalentTreeInspector.isTalentLineWanted()
+    return addon.db and addon.db.unit and addon.db.unit.player and addon.db.unit.player.showTalent ~= false
+end
+
 function TalentTreeInspector.trySendInspect(guid, attempt)
     attempt = (attempt or 0) + 1
     if pendingGUID ~= guid then return end
-    if shownGUID ~= guid or not GameTooltip:IsShown() then
-        pendingGUID = nil
-        return
-    end
-    if not (addon.db and addon.db.unit and addon.db.unit.player and addon.db.unit.player.showTalent ~= false) then
+    if shownGUID ~= guid or not GameTooltip:IsShown() or not TalentTreeInspector.isTalentLineWanted() then
         pendingGUID = nil
         return
     end
@@ -733,21 +778,13 @@ function TalentTreeInspector.trySendInspect(guid, attempt)
         pendingGUID = nil
         return
     end
-    if InCombatLockdown() then
-        pendingGUID = nil
-        return
-    end
-    if InspectFrame and InspectFrame:IsShown() then
-        pendingGUID = nil
-        return
-    end
-    if PlayerSpellsFrame and PlayerSpellsFrame.IsInspecting and PlayerSpellsFrame:IsInspecting() then
-        pendingGUID = nil
-        return
-    end
     local unit = TalentTreeInspector.determineUnitForGUID(guid)
-    if unit and UnitExists(unit) then
-        
+    if not unit or not UnitExists(unit) then
+        pendingGUID = nil
+        return
+    end
+    -- the client still holds this unit's inspect data: no new request
+    if TalentTreeInspector.hasInspectDataFor(guid) then
         local extractSafeTooltipText = TalentTreeInspector.resolveUnitTalentText(unit, guid, true)
         if extractSafeTooltipText and talentCache[guid] and talentCache[guid].final then
             pendingGUID = nil
@@ -756,18 +793,24 @@ function TalentTreeInspector.trySendInspect(guid, attempt)
             return
         end
     end
+    if not compat.CanRequestInspect(unit) then
+        pendingGUID = nil
+        return
+    end
+    -- at most one request a little over every second (the server drops faster ones)
     local elapsedSinceLast = GetTime() - lastInspectTime
-    if elapsedSinceLast < 1.1 and attempt <= 3 then
-        C_Timer.After(1.15 - elapsedSinceLast, function()
-            TalentTreeInspector.trySendInspect(guid, attempt)
-        end)
+    if elapsedSinceLast < 1.1 then
+        if attempt <= 3 then
+            C_Timer.After(1.15 - elapsedSinceLast, function()
+                TalentTreeInspector.trySendInspect(guid, attempt)
+            end)
+        else
+            pendingGUID = nil
+        end
         return
     end
     pendingGUID = nil
-    if unit and UnitExists(unit) and compat.CanRequestInspect(unit) then
-        lastInspectTime = GetTime()
-        pcall(NotifyInspect, unit)
-    end
+    pcall(NotifyInspect, unit)
 end
 
 function TalentTreeInspector.requestInspectIfNeeded(guid)
@@ -778,25 +821,48 @@ function TalentTreeInspector.requestInspectIfNeeded(guid)
     end)
 end
 
-if NotifyInspect then
-    hooksecurefunc("NotifyInspect", function()
+-- Every inspect request (ours, the inspect window's, other addons') changes
+-- whose data the client will hold.
+if type(NotifyInspect) == "function" then
+    hooksecurefunc("NotifyInspect", function(unit)
         lastInspectTime = GetTime()
+        local okGUID, requestGUID = pcall(UnitGUID, unit)
+        requestGUID = okGUID and nosecret(requestGUID) or nil
+        if requestGUID ~= inspectReadyGUID then inspectReadyGUID = nil end
+        inspectRequestGUID = requestGUID
+    end)
+end
+if type(ClearInspectPlayer) == "function" then
+    hooksecurefunc("ClearInspectPlayer", function()
+        inspectReadyGUID = nil
+        inspectRequestGUID = nil
     end)
 end
 
 local eventFrame = CreateFrame("Frame")
-for _, eventName in ipairs({ "INSPECT_READY", "PLAYER_TALENT_UPDATE", "PLAYER_SPECIALIZATION_CHANGED", "TRAIT_CONFIG_UPDATED", "ACTIVE_COMBAT_CONFIG_CHANGED" }) do
+for _, eventName in ipairs({ "INSPECT_READY", "PLAYER_TALENT_UPDATE", "PLAYER_SPECIALIZATION_CHANGED", "TRAIT_CONFIG_UPDATED", "ACTIVE_COMBAT_CONFIG_CHANGED", "PLAYER_LEVEL_UP" }) do
     pcall(eventFrame.RegisterEvent, eventFrame, eventName)
 end
 eventFrame:SetScript("OnEvent", function(self, event, arg1)
     if event == "INSPECT_READY" then
         local guid = nosecret(arg1)
         if not guid then return end
+        if inspectRequestGUID and inspectRequestGUID ~= guid then
+            -- an answer for an older request: a newer one is on its way
+            return
+        end
+        inspectRequestGUID = guid
+        inspectReadyGUID = guid
+        if shownGUID ~= guid or not GameTooltip:IsShown() or not TalentTreeInspector.isTalentLineWanted() then
+            -- not on the tooltip now: forget the old result, read it when shown again
+            local cached = talentCache[guid]
+            if cached and not cached.final then talentCache[guid] = nil end
+            return
+        end
         local unit = TalentTreeInspector.determineUnitForGUID(guid)
         if not unit then return end
         local extractSafeTooltipText = TalentTreeInspector.resolveUnitTalentText(unit, guid, true)
-        if (extractSafeTooltipText and shownGUID == guid and GameTooltip:IsShown()
-            and addon.db and addon.db.unit and addon.db.unit.player and addon.db.unit.player.showTalent ~= false) then
+        if extractSafeTooltipText then
             TalentTreeInspector.commitTalentLineToTooltip(GameTooltip, extractSafeTooltipText)
             pcall(GameTooltip.Show, GameTooltip)
         end
@@ -815,15 +881,14 @@ end)
 
 EventDispatcher:attachTrigger("tooltip:unit", function(self, tip, unit)
     if tip ~= GameTooltip then return end
-    if not addon.db or not addon.db.unit or not addon.db.unit.player or addon.db.unit.player.showTalent == false then
-        return
-    end
+    if not TalentTreeInspector.isTalentLineWanted() then return end
     if not unit or addon:IsUnitRestricted(unit) or not nosecret(UnitIsPlayer(unit)) then return end
     local guid = nosecret(UnitGUID(unit))
     shownGUID = guid
-    local extractSafeTooltipText = TalentTreeInspector.resolveUnitTalentText(unit, guid, false)
+    local isSelf = nosecret(UnitIsUnit(unit, "player"))
+    local extractSafeTooltipText = TalentTreeInspector.resolveUnitTalentText(unit, guid, not isSelf and TalentTreeInspector.hasInspectDataFor(guid))
     TalentTreeInspector.commitTalentLineToTooltip(tip, extractSafeTooltipText)
-    if guid and not nosecret(UnitIsUnit(unit, "player")) then
+    if guid and not isSelf then
         local cached = talentCache[guid]
         if not cached or not cached.final or (GetTime() - cached.time) >= CACHE_TTL then
             TalentTreeInspector.requestInspectIfNeeded(guid)

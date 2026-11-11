@@ -400,3 +400,71 @@ function PlatformBridge.FontFlag(outlineFlag)
     end
     return outlineFlag
 end
+
+-----------------------------------------------------------------------------
+-- Inline icons for tooltip lines
+-- Symbol characters (diamonds, stars, arrows, check marks) are missing from
+-- the Latin and Cyrillic game fonts and show as boxes there, so line markers
+-- are small textures taken from client atlases instead. The markup is a plain
+-- |T string (file ID and whole pixel numbers only): it holds no Lua pattern
+-- characters, so a line prefix that contains it still works as a find()
+-- pattern. When the atlas is missing on this client the icon is "".
+-----------------------------------------------------------------------------
+local iconMarkupCache = {}
+
+function PlatformBridge.AtlasIcon(atlasName, iconHeight, tintHex)
+    iconHeight = iconHeight or 10
+    local cacheKey = format("%s:%d:%s", tostring(atlasName), iconHeight, tostring(tintHex))
+    local cached = iconMarkupCache[cacheKey]
+    if cached then return cached end
+    local markup = ""
+    local textureAPI = _G.C_Texture
+    if textureAPI and type(textureAPI.GetAtlasInfo) == "function" then
+        local okInfo, info = pcall(textureAPI.GetAtlasInfo, atlasName)
+        if okInfo and type(info) == "table" and type(info.file) == "number" and info.file > 0 then
+            local left, right = tonumber(info.leftTexCoord), tonumber(info.rightTexCoord)
+            local top, bottom = tonumber(info.topTexCoord), tonumber(info.bottomTexCoord)
+            local width, height = tonumber(info.width), tonumber(info.height)
+            if left and right and top and bottom and width and height and right > left and bottom > top
+                and width > 0 and height > 0 then
+                local fileWidth = math.floor(width / (right - left) + 0.5)
+                local fileHeight = math.floor(height / (bottom - top) + 0.5)
+                local iconWidth = math.max(1, math.floor(iconHeight * width / height + 0.5))
+                markup = format("|T%d:%d:%d:0:0:%d:%d:%d:%d:%d:%d", info.file, iconHeight, iconWidth,
+                    fileWidth, fileHeight,
+                    math.floor(left * fileWidth + 0.5), math.floor(right * fileWidth + 0.5),
+                    math.floor(top * fileHeight + 0.5), math.floor(bottom * fileHeight + 0.5))
+                if type(tintHex) == "string" and #tintHex == 6 then
+                    markup = markup .. format(":%d:%d:%d", tonumber(tintHex:sub(1, 2), 16),
+                        tonumber(tintHex:sub(3, 4), 16), tonumber(tintHex:sub(5, 6), 16))
+                end
+                markup = markup .. "|t"
+            end
+        end
+    end
+    iconMarkupCache[cacheKey] = markup
+    return markup
+end
+
+-- Line marker: a filled dot for a main line, a ring for a line that belongs
+-- to the one above it (tinted with the given colour, default the accent blue).
+local BULLET_ATLAS = { filled = "WhiteCircle-RaidBlips", hollow = "WhiteDotCircle-RaidBlips" }
+local BULLET_TINT = "4BC8E8"
+
+function PlatformBridge.LineBullet(isHollow, tintHex)
+    return PlatformBridge.AtlasIcon(isHollow and BULLET_ATLAS.hollow or BULLET_ATLAS.filled, 10, tintHex or BULLET_TINT)
+end
+
+-- Prefix of one of our tooltip lines: marker + an empty colour code that
+-- names the line kind (invisible, used to find the line again).
+function PlatformBridge.LineTag(kindHex, isHollow, tintHex)
+    local bullet = PlatformBridge.LineBullet(isHollow, tintHex)
+    local kindMark = "|cff" .. kindHex .. "|r"
+    if bullet == "" then return kindMark end
+    return bullet .. kindMark .. " "
+end
+
+-- Small check mark for "collected" / "learned" marks inside a line.
+function PlatformBridge.CheckIcon()
+    return PlatformBridge.AtlasIcon("groupfinder-icon-greencheckmark", 11)
+end

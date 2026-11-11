@@ -382,7 +382,7 @@ function UnitTacticalOverlay.extractNpcTrackingInfo(guid)
                         if isCallOk and iName and iName ~= "" then
                             local qHex = (iQuality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[iQuality] and ITEM_QUALITY_COLORS[iQuality].hex) or "|cffEDF4F7"
                             local rateTxt = (rateStr and rateStr ~= "") and format(" |cff8398A6(%s%%)|r", rateStr) or ""
-                            local colMark = (hasCollected == true) and " |cffAEE26A✓|r" or ((hasCollected == false) and " |cffEA837E!|r" or "")
+                            local colMark = (hasCollected == true) and (" " .. compat.CheckIcon()) or ((hasCollected == false) and " |cffEA837E!|r" or "")
                             notableNames[#notableNames + 1] = format("%s%s[%s]|r%s%s", composeIcon(iTex), qHex, nosecret(iName), rateTxt, colMark)
                         elseif C_Item and C_Item.RequestLoadItemDataByID then
                             pcall(C_Item.RequestLoadItemDataByID, itemIDVal)
@@ -455,7 +455,7 @@ function UnitTacticalOverlay.refreshUnitExtras(tip, unit, isInspectReady)
         addon:StripMatchingTooltipLine(tip, NPC_ALIVE_PATTERN)
         addon:StripMatchingTooltipLine(tip, NPC_TRACK_PATTERN)
         addon:StripMatchingTooltipLine(tip, NPC_NOTABLE_PATTERN)
-        addon:StripMatchingTooltipLine(tip, "^|cff4BC8E8◆|r|cff000115|r ")
+        addon:StripMatchingTooltipLine(tip, "^" .. compat.LineTag("000115"))
 
         if not pCfg or pCfg.showItemLevel ~= false then
             local ilvl = UnitTacticalOverlay.extractUnitItemLevel(unit, guid, isInspectReady)
@@ -521,16 +521,16 @@ function UnitTacticalOverlay.refreshUnitExtras(tip, unit, isInspectReady)
             end
             if zoneColLine then
                 local zLabel = hasDungeonLoc and resolveExtraLocaleText("instCollect") or resolveExtraLocaleText("zoneCollect")
-                addon:InsertOrUpdateTooltipLine(tip, "^|cff4BC8E8◆|r|cff000115|r ",
-                    format("|cff4BC8E8◆|r|cff000115|r |cffA7B9C5%s:|r %s", zLabel, zoneColLine))
+                addon:InsertOrUpdateTooltipLine(tip, "^" .. compat.LineTag("000115"),
+                    compat.LineTag("000115") .. format("|cffA7B9C5%s:|r %s", zLabel, zoneColLine))
             else
-                addon:StripMatchingTooltipLine(tip, "^|cff4BC8E8◆|r|cff000115|r ")
+                addon:StripMatchingTooltipLine(tip, "^" .. compat.LineTag("000115"))
             end
         else
             addon:StripMatchingTooltipLine(tip, NPC_ALIVE_PATTERN)
             addon:StripMatchingTooltipLine(tip, NPC_TRACK_PATTERN)
             addon:StripMatchingTooltipLine(tip, NPC_NOTABLE_PATTERN)
-            addon:StripMatchingTooltipLine(tip, "^|cff4BC8E8◆|r|cff000115|r ")
+            addon:StripMatchingTooltipLine(tip, "^" .. compat.LineTag("000115"))
         end
     end
 
