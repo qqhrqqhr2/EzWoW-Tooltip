@@ -27,7 +27,7 @@
 ## X-License: GPL-3.0
 ## X-Website: https://github.com/qqhrqqhr2/EzWoW-Tooltip
 ## IconTexture: Interface\AddOns\EzWoW-Tooltip\Media\Icon
-## SavedVariables: EzWoW_TooltipDB, EzWoW_SharedData
+## SavedVariables: EzWoW_TooltipDB, EzWoW_SharedData, EzWoW_ShareStore_Tooltip
 ## SavedVariablesPerCharacter: EzWoW_TooltipPerCharDB
 ## OptionalDeps: Blizzard_PTRFeedback, EzWoW-Data
 

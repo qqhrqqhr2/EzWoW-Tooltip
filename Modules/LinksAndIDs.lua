@@ -167,26 +167,41 @@ if C_MountJournal and C_MountJournal.GetMountIDs then
         end
     end)
 
-    if GameTooltip.SetUnitAura then
+    -- only without the UnitAura tooltip data type; otherwise onAuraTooltip adds these lines
+    local hasAuraPostCall = _G.TooltipDataProcessor and _G.Enum and _G.Enum.TooltipDataType and _G.Enum.TooltipDataType.UnitAura
+    if GameTooltip.SetUnitAura and not hasAuraPostCall then
         hooksecurefunc(GameTooltip, "SetUnitAura", function(tip, unit, index, filter)
             local spellID = platformHelper.GetUnitAuraSpellAndIcon(unit, index, filter)
-            local entry = spellID and mountBySpell[spellID]
-            if not entry then return end
-            local _, desc, sourceVal = C_MountJournal.GetMountInfoExtraByID(entry.id)
-            tip:AddLine(" ")
-            if sourceVal and sourceVal ~= "" then
-                tip:AddLine(sourceVal, 1, 1, 1)
+            if EntryIdentifierAppender.appendMountLines(tip, spellID) then
+                addon.AttributeTooltip(tip)
+                tip:Show()
             end
-            if entry.collected then
-                tip:AddLine(COLLECTED or "Collected", 0.1, 1, 0.1)
-            end
-            if desc and desc ~= "" then
-                tip:AddLine(desc, 1, 0.82, 0, true)
-            end
-            addon.AttributeTooltip(tip)
-            tip:Show()
         end)
     end
+end
+
+-- returns true when lines were added
+function EntryIdentifierAppender.appendMountLines(tip, spellID)
+    spellID = tonumber(nosecret(spellID))
+    local entry = spellID and mountBySpell[spellID]
+    if not tip or not entry or not C_MountJournal then return false end
+    local okExtra, _, desc, sourceVal = pcall(C_MountJournal.GetMountInfoExtraByID, entry.id)
+    if not okExtra then return false end
+    -- read at hover time: the login cache goes stale after learning a mount
+    local collected = entry.collected
+    local okInfo, _, _, _, _, _, _, _, _, _, _, hasCollected = pcall(C_MountJournal.GetMountInfoByID, entry.id)
+    if okInfo then collected = hasCollected end
+    tip:AddLine(" ")
+    if sourceVal and sourceVal ~= "" then
+        tip:AddLine(sourceVal, 1, 1, 1)
+    end
+    if collected then
+        tip:AddLine(COLLECTED or "Collected", 0.1, 1, 0.1)
+    end
+    if desc and desc ~= "" then
+        tip:AddLine(desc, 1, 0.82, 0, true)
+    end
+    return true
 end
 
 -----------------------------------------------------------------------------
@@ -198,6 +213,7 @@ local ID_LABELS = {
     spell       = STAT_CATEGORY_SPELL or "Spell",
     quest       = QUESTS_LABEL or "Quest",
     achievement = ACHIEVEMENT_BUTTON or "Achievement",
+    npc         = "NPC",
 }
 
 function EntryIdentifierAppender.wantIDRow()
@@ -286,6 +302,31 @@ end
 EntryIdentifierAppender.bindAuraIDs("SetUnitAura")
 EntryIdentifierAppender.bindAuraIDs("SetUnitBuff")
 EntryIdentifierAppender.bindAuraIDs("SetUnitDebuff")
+
+-- called from the UnitAura post-call (AuraCasterAndPTR.lua), which also covers
+-- the Set*ByAuraInstanceID methods; uses no aura API, so it works in combat
+function EntryIdentifierAppender.onAuraTooltip(tip, spellId)
+    spellId = tonumber(nosecret(spellId))
+    if not tip or not spellId then return end
+    if addon.db.spell.showIcon then
+        EntryIdentifierAppender.prefixTitleIcon(tip, GetSpellTexture(spellId))
+    end
+    if EntryIdentifierAppender.appendMountLines(tip, spellId) then
+        addon.AttributeTooltip(tip)
+        if tip:IsShown() then tip:Show() end
+    end
+    EntryIdentifierAppender.appendIDRow(tip, "spell", spellId)
+end
+
+bus:attachTrigger("tooltip:unit:post", function(_, tip, unit)
+    if not tip or not unit or nosecret(UnitIsPlayer(unit)) then return end
+    local guid = nosecret(UnitGUID(unit))
+    if type(guid) ~= "string" then return end
+    local kind, npcId = guid:match("^(%a+)%-[^%-]*%-[^%-]*%-[^%-]*%-[^%-]*%-(%d+)")
+    if kind == "Creature" or kind == "Vehicle" then
+        EntryIdentifierAppender.appendIDRow(tip, "npc", npcId)
+    end
+end)
 
 if QuestMapLogTitleButton_OnEnter then
     hooksecurefunc("QuestMapLogTitleButton_OnEnter", function(btn)

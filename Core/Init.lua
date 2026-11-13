@@ -48,6 +48,20 @@ function CoreBootstrap.sanitizeSavedConfig(configTbl)
     end
 end
 
+-- settings keys only: price, caster and window data stay in the account table
+function CoreBootstrap.settingsView(srcTbl, schemaTbl)
+    local out = {}
+    for k in pairs(schemaTbl) do out[k] = srcTbl[k] end
+    return out
+end
+
+function CoreBootstrap.dropDataKeys(charTbl, schemaTbl)
+    if type(charTbl) ~= "table" then return end
+    for k in pairs(charTbl) do
+        if schemaTbl[k] == nil then charTbl[k] = nil end
+    end
+end
+
 local hasLoaded = false
 
 function TooltipEngine:LoadSettings()
@@ -60,9 +74,10 @@ function TooltipEngine:LoadSettings()
     globalDB.version = self.defaultDB.version
 
     local charDB = CoreBootstrap.determineSavedTable("EzWoW_TooltipPerCharDB", "EzWoW_TooltipPerCharDB")
+    CoreBootstrap.dropDataKeys(charDB, self.defaultDB)   -- clears data copies left by older versions
     if globalDB.general.SavedVariablesPerCharacter then
         CoreBootstrap.sanitizeSavedConfig(charDB)
-        self.db = self:MergeVariable(self.DeepCopy(globalDB), charDB)
+        self.db = self:MergeVariable(self.DeepCopy(CoreBootstrap.settingsView(globalDB, self.defaultDB)), charDB)
     else
         self.db = globalDB
     end

@@ -339,7 +339,9 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
             local okGear, gearLines = pcall(bgf.ItemTooltipLines, bgf, tip, itemID)
             for _, row in ipairs(okGear and type(gearLines) == "table" and gearLines or {}) do
                 if type(row) == "table" and type(row[1]) == "string" then
-                    tip:AddLine(ITEM_TAGS.GEAR_INFO .. row[1], tonumber(row[2]) or 1, tonumber(row[3]) or 1, tonumber(row[4]) or 1, true)
+                    -- (no wrap: on this client a wrapped tooltip line can end up cut with "...";
+                    -- the rows already come split into short lines)
+                    tip:AddLine(ITEM_TAGS.GEAR_INFO .. row[1], tonumber(row[2]) or 1, tonumber(row[3]) or 1, tonumber(row[4]) or 1)
                 end
             end
         end

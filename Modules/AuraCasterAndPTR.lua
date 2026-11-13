@@ -159,6 +159,18 @@ function AuraCasterTracker.resolvePersistentCasterTable()
     return EzWoW_TooltipDB.auraCasters
 end
 
+function AuraCasterTracker.prunePersistentCasters()
+    local dbTbl = AuraCasterTracker.resolvePersistentCasterTable()
+    if not dbTbl then return end
+    local nowTs = (time and time()) or 0
+    if nowTs <= 0 then return end
+    for key, rec in pairs(dbTbl) do
+        if type(rec) ~= "table" or type(rec.name) ~= "string" or type(rec.ts) ~= "number" or (nowTs - rec.ts) > 7200 then
+            dbTbl[key] = nil
+        end
+    end
+end
+
 function AuraCasterTracker.persistAuraCasterRecord(spellId, spellName, auraInstanceID, expirationTime, casterName, casterClass, isPlayer)
     casterName = nosecret(casterName)
     if type(casterName) ~= "string" or casterName == "" then return end
@@ -316,7 +328,7 @@ function AuraCasterTracker.lookupCachedAuraCaster(auraInstanceID, spellId, spell
         local nowTs = (time and time()) or 0
         local recordItem = (spellId and dbTbl["id:" .. tostring(spellId)]) or (spellName and dbTbl["nm:" .. spellName])
         if recordItem and recordItem.name then
-            if not recordItem.ts or (nowTs - recordItem.ts) <= 7200 then
+            if type(recordItem.ts) == "number" and (nowTs - recordItem.ts) <= 7200 then
                 return recordItem
             end
         end
@@ -366,8 +378,9 @@ casterTrackFrame:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
             AuraCasterTracker.inspectAndCachePlayerAuras()
         end
     else
-        if event == "PLAYER_ENTERING_WORLD" and addon.SynchronizeAuraCasterCVar then
-            addon.SynchronizeAuraCasterCVar()
+        if event == "PLAYER_ENTERING_WORLD" then
+            AuraCasterTracker.prunePersistentCasters()
+            if addon.SynchronizeAuraCasterCVar then addon.SynchronizeAuraCasterCVar() end
         end
         AuraCasterTracker.inspectAndCachePlayerAuras()
     end
@@ -580,7 +593,18 @@ function AuraCasterTracker.determineAndAppendAuraCaster(tip, unit, index, filter
     end
 
     local expTime = resolvedAura and tonumber(nosecret(resolvedAura.expirationTime)) or 0
-    local cached = AuraCasterTracker.lookupCachedAuraCaster(auraInstanceID, spellID, cleanTitle, expTime)
+    local onOtherUnit = false
+    if resolvedUnit and resolvedUnit ~= "player" then
+        local okSame, same = pcall(UnitIsUnit, resolvedUnit, "player")
+        onOtherUnit = not (okSame and nosecret(same))
+    end
+    local cached
+    if onOtherUnit then
+        -- the cache only knows the player's own auras: match the exact aura instance only
+        cached = auraInstanceID and AuraCasterTracker.lookupCachedAuraCaster(auraInstanceID, nil, nil, expTime) or nil
+    else
+        cached = AuraCasterTracker.lookupCachedAuraCaster(auraInstanceID, spellID, cleanTitle, expTime)
+    end
     if cached and cached.name then
         local displayCaster = AuraCasterTracker.composeCasterDisplay(cached.name, cached.class, cached.isPlayer, nil)
         AuraCasterTracker.paintAuraCasterLineOnTooltip(tip, displayCaster, cached.name)
@@ -590,12 +614,14 @@ function AuraCasterTracker.determineAndAppendAuraCaster(tip, unit, index, filter
     local inferredClass = (spellID and AURA_SPELL_CLASS[spellID]) or (cleanTitle and AURA_SPELL_NAME_CLASS[cleanTitle])
     if inferredClass then
         
-        local nearName, nearClass, nearIsPl = AuraCasterTracker.locateNearbyFriendlyPlayerByClass(inferredClass)
-        if nearName then
-            AuraCasterTracker.persistAuraCasterRecord(spellID, cleanTitle, auraInstanceID, expTime, nearName, nearClass, nearIsPl)
-            local displayCaster = AuraCasterTracker.composeCasterDisplay(nearName, nearClass, nearIsPl, nil)
-            AuraCasterTracker.paintAuraCasterLineOnTooltip(tip, displayCaster, nearName)
-            return
+        -- a guess: shown on the player's own aura only, never saved
+        if not onOtherUnit then
+            local nearName, nearClass, nearIsPl = AuraCasterTracker.locateNearbyFriendlyPlayerByClass(inferredClass)
+            if nearName then
+                local displayCaster = AuraCasterTracker.composeCasterDisplay(nearName, nearClass, nearIsPl, nil)
+                AuraCasterTracker.paintAuraCasterLineOnTooltip(tip, displayCaster, nearName)
+                return
+            end
         end
 
         local locClassName = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[inferredClass])
@@ -628,6 +654,8 @@ compat.AddTooltipPostCall("UnitAura", nil, function(self, data)
         nosecret(data.auraInstanceID),
         spellID
     )
+    local idAppender = ns.EntryIdentifierAppender
+    if idAppender and idAppender.onAuraTooltip then idAppender.onAuraTooltip(self, spellID) end
 end)
 
 for _, method in ipairs({ "SetUnitAura", "SetUnitBuff", "SetUnitDebuff" }) do

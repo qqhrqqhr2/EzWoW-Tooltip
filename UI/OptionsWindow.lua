@@ -1419,7 +1419,9 @@ function SettingsDialog.launchConfigWindow()
         function(entryValue)
             EzWoW_TooltipDB.general.SavedVariablesPerCharacter = entryValue
             if entryValue then
-                local savedDB = addon.DeepCopy(addon.db)
+                local savedDB = addon.DeepCopy(ns.CoreBootstrap.settingsView(EzWoW_TooltipDB, addon.defaultDB))
+                if type(EzWoW_TooltipPerCharDB) ~= "table" then EzWoW_TooltipPerCharDB = {} end
+                ns.CoreBootstrap.dropDataKeys(EzWoW_TooltipPerCharDB, addon.defaultDB)
                 addon.db = addon:MergeVariable(savedDB, EzWoW_TooltipPerCharDB)
             else
                 addon.db = EzWoW_TooltipDB

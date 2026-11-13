@@ -16,6 +16,8 @@ local issecret = compat.issecret
 local TALENT_TAG = compat.LineTag("000123", false, "AEE26A")
 local TALENT_PREFIX_PATTERN = "^" .. TALENT_TAG
 local CACHE_TTL = 120
+-- own talents: short reuse so tooltip refreshes do not re-read the whole tree
+local SELF_CACHE_TTL = 2
 
 local FOREVER_CLASS_SPECS = {
     [1482] = true, [1484] = true, [1485] = true, [1486] = true, [1487] = true,
@@ -706,11 +708,16 @@ function TalentTreeInspector.resolveUnitTalentText(unit, guid, isInspectReady)
 
     local hasSelf = nosecret(UnitIsUnit(unit, "player"))
     if hasSelf then
+        local now = GetTime()
+        local selfCached = guid and talentCache[guid]
+        if selfCached and selfCached.self and (now - selfCached.time) < SELF_CACHE_TTL then
+            return selfCached.text
+        end
         local extractSafeTooltipText = TalentTreeInspector.extractTraitsTalentTree(class, false)
             or TalentTreeInspector.extractClassicTalentTabs(class, false, "player")
             or TalentTreeInspector.extractSpecAndGearFallback("player", class, false, true)
         if extractSafeTooltipText and guid then
-            talentCache[guid] = { text = extractSafeTooltipText, time = GetTime(), final = true }
+            talentCache[guid] = { text = extractSafeTooltipText, time = now, final = true, self = true }
         end
         return extractSafeTooltipText
     end
@@ -840,7 +847,7 @@ if type(ClearInspectPlayer) == "function" then
 end
 
 local eventFrame = CreateFrame("Frame")
-for _, eventName in ipairs({ "INSPECT_READY", "PLAYER_TALENT_UPDATE", "PLAYER_SPECIALIZATION_CHANGED", "TRAIT_CONFIG_UPDATED", "ACTIVE_COMBAT_CONFIG_CHANGED", "PLAYER_LEVEL_UP" }) do
+for _, eventName in ipairs({ "INSPECT_READY", "PLAYER_TALENT_UPDATE", "PLAYER_SPECIALIZATION_CHANGED", "TRAIT_CONFIG_UPDATED", "ACTIVE_COMBAT_CONFIG_CHANGED", "PLAYER_LEVEL_UP", "CHARACTER_POINTS_CHANGED" }) do
     pcall(eventFrame.RegisterEvent, eventFrame, eventName)
 end
 eventFrame:SetScript("OnEvent", function(self, event, arg1)
