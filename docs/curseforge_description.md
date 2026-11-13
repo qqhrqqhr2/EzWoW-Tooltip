@@ -12,7 +12,7 @@ Clean dark card tooltips for WoW Forever, with extra information on players, NPC
 
 ![Settings window](https://raw.githubusercontent.com/qqhrqqhr2/EzWoW-Tooltip/master/docs/images/settings_en.png)
 
-*In-game screenshots (WoW Forever, Korean client). Character and player names and chat text are blurred.*
+*In-game screenshots with the addon set to English. The game client is Korean, so game text such as zone, item and spell names stays Korean. Character and player names and chat text are blurred.*
 
 ## Features
 
