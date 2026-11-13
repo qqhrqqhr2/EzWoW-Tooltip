@@ -6,9 +6,9 @@ local addonName, ns = ...
 
 -- The "EzWoW - ..." name line at the end of tooltip additions is drawn small.
 -- Shared by the EzWoW addons: the first one loaded sets it up.
-if not (_G.EzWoWTooltipTagSizer and _G.EzWoWTooltipTagSizer.version == 3) then
+if not (_G.EzWoWTooltipTagSizer and (tonumber(_G.EzWoWTooltipTagSizer.version) or 0) >= 4) then
     local sizer = {}
-    sizer.version = 3
+    sizer.version = 4
     _G.EzWoWTooltipTagSizer = sizer
     local smallFont
     local original = setmetatable({}, { __mode = "k" })   -- font string -> its own font object
@@ -25,14 +25,25 @@ if not (_G.EzWoWTooltipTagSizer and _G.EzWoWTooltipTagSizer.version == 3) then
         if type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then return false end
         return text:find("^EzWoW %- ") ~= nil
     end
+    -- the size goes on the line itself too: a size another addon put on the
+    -- line (a font addon) would stay over the font object otherwise
+    local function setSize(fs, font)
+        if not (font and font.GetFont and fs.SetFont) then return end
+        local path, size, flags = font:GetFont()
+        if path and size then fs:SetFont(path, size, flags or "") end
+    end
     local function fit(fs, tag)
         if not fs then return end
         if tag then
             if not original[fs] then original[fs] = fs:GetFontObject() or GameTooltipText end
-            if tagFont() then fs:SetFontObject(smallFont) end
+            if tagFont() then
+                fs:SetFontObject(smallFont)
+                setSize(fs, smallFont)
+            end
             fs:SetTextColor(0.5, 0.5, 0.5)
         elseif original[fs] then
             fs:SetFontObject(original[fs])
+            setSize(fs, original[fs])
             original[fs] = nil
         end
     end
@@ -57,6 +68,7 @@ if not (_G.EzWoWTooltipTagSizer and _G.EzWoWTooltipTagSizer.version == 3) then
             local fsName = fs.GetName and fs:GetName()
             if type(fsName) == "string" and (fsName:find(rightPrefix, 1, true) == 1 or fsName:find(leftPrefix, 1, true) == 1) then
                 fs:SetFontObject(font)
+                setSize(fs, font)
                 original[fs] = nil
             end
         end
@@ -69,6 +81,17 @@ if not (_G.EzWoWTooltipTagSizer and _G.EzWoWTooltipTagSizer.version == 3) then
     end
 end
 local type, pairs, ipairs, tonumber, tostring, select, pcall = type, pairs, ipairs, tonumber, tostring, select, pcall
+
+-- A tooltip drawn again in place (the game's refresh, e.g. on Shift) may not
+-- show again: the name-line sizes are set once more after it
+do
+    local sizer = _G.EzWoWTooltipTagSizer
+    for _, tip in ipairs({ GameTooltip, ItemRefTooltip, ShoppingTooltip1, ShoppingTooltip2 }) do
+        if tip and type(tip.RefreshData) == "function" and sizer and sizer.Refit then
+            pcall(hooksecurefunc, tip, "RefreshData", function(self) pcall(sizer.Refit, self) end)
+        end
+    end
+end
 
 local TooltipEngine = ns.TooltipEngine or {}
 ns.TooltipEngine = TooltipEngine
@@ -366,6 +389,12 @@ local ATTRIBUTION_LINE = {
     rightText = TooltipEngine.ATTRIBUTION_TEXT, rightColor = { ATTRIBUTION_R, ATTRIBUTION_G, ATTRIBUTION_B, 1 }, rightShown = true,
 }
 
+-- other EzWoW addons' lines on item and unit tooltips (Libs/EzWoWShare) share
+-- this one name line at the bottom
+_G.EzWoWTooltipAttribute = function(tipFrame)
+    if TooltipEngine.AttributeTooltip then return TooltipEngine.AttributeTooltip(tipFrame) end
+end
+
 -- Call after adding lines to a tooltip (before its :Show()). Hidden scan tooltips are skipped.
 function TooltipEngine.AttributeTooltip(tipFrame)
     if not TooltipEngine.IsDecoratableTooltip(tipFrame) then return end
@@ -415,6 +444,13 @@ function TooltipEngine.AttributeTooltip(tipFrame)
         writeLine(tipFrame, tipName, lineIdx, rowsBelow[lineIdx + 1])
     end
     writeLine(tipFrame, tipName, lastFilled, ATTRIBUTION_LINE)
+    -- the rows moved keep the font of the row they came to (the name line's
+    -- small one): every row gets the size of what it holds now
+    local sizer = _G.EzWoWTooltipTagSizer
+    if sizer and sizer.Refit then pcall(sizer.Refit, tipFrame) end
+    -- rows keep the size of the text they had: laid out again for the text
+    -- they hold now (else a longer one is cut with "...")
+    if tipFrame.IsShown and tipFrame:IsShown() and tipFrame.Show then pcall(tipFrame.Show, tipFrame) end
 end
 
 -- A group token ("party1") can be locked inside instances while the same person

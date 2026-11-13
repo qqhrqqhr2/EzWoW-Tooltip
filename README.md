@@ -23,7 +23,7 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 
 ![설정창](docs/images/settings_ko.png)
 
-> 이미지는 애드온 코드의 크기 · 색상 · 문구로 재현한 **예시 화면**입니다. 캐릭터 · 길드 이름과 숫자는 지어낸 예시입니다(3D 모델 자리에는 그림을 넣었습니다).
+> 실제 게임 화면입니다(WoW Forever, 한국어 클라이언트). 캐릭터 · 다른 플레이어 이름과 채팅 내용은 가렸습니다.
 
 ### 설치
 
@@ -31,7 +31,7 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 2. 캐릭터 선택 화면의 **애드온** 목록에서 켭니다.
 3. 바로 적용됩니다. 설정은 `/ezt`.
 
-### 툴팁에 붙는 정보 (위 그림의 번호)
+### 툴팁에 붙는 정보
 
 | 번호 | 툴팁 | 내용 |
 |---|---|---|
@@ -39,7 +39,7 @@ WoW Forever (`Interface: 16001`) · `/ezt`
 | ② | 플레이어 | 칭호 · **이름 성** · 길드(계급) · 레벨 · 종족 · 직업 · 지역, **평균 아이템 레벨**, **특성 배분**, 탈것, 이동 속도(%), **대상의 대상**, **이 대상을 선택한 파티원**, PvP 계급. 아이템 레벨과 특성은 조사 후 캐시해 둡니다. |
 | ③ | NPC | 레벨 · 정예 · 종류, **지금 시전 중인 주문**, **내 위협 수준(%) · 탱킹 여부**, 대상, 생존 시간 · 위상, 드랍 수집 추적, NPC ID. |
 | ④ | 채집 숙련도 | 약초 · 광맥 · 가죽을 벗길 수 있는 시체 툴팁에 **필요한 숙련도와 내 숙련도**를 난이도 색(빨강 · 주황 · 노랑 · 초록 · 회색)으로 표시합니다. 배우지 않은 기술은 “미습득”. |
-| ⑤ | 아이템 · 착용 장비 비교 | **한 · 영 이름 병기**, 획득처(던전 · 보스 · 퀘스트 · 상인 · 제작 · 월드 드랍 등, 내장 `Data/SourceDB.lua`), 수집 상태(형상 · 탈것 · 도안 · 퀘스트), **가방/은행 보유 수량**, 최대 겹침(Shift), 상점 판매가, **경매장 저장 시세**(개당/묶음, 수집한 지 얼마나 됐는지), 아이템 ID. **Shift 없이 착용 장비 비교** 옵션을 켜면 착용 중인 장비 툴팁이 나란히 뜹니다(기본 꺼짐). |
+| ⑤ | 아이템 · 착용 장비 비교 | **한 · 영 이름 병기**, 획득처(던전 · 보스 · 퀘스트 · 상인 · 제작 · 월드 드랍 등, 내장 `Data/SourceDB.lua`), 수집 상태(형상 · 탈것 · 도안 · 퀘스트), **가방/은행 보유 수량**, 최대 겹침(Shift), 상점 판매가, **경매장 저장 시세**(개당/묶음, 수집한 지 얼마나 됐는지), 아이템 ID. **Shift 없이 착용 장비 비교** 옵션을 켜면 착용 중인 장비 툴팁이 나란히 뜹니다(기본 꺼짐). 획득처 · 수집 · 보유 줄은 이름 아래 한 묶음으로 나오고, 획득처가 여러 곳이면 “외 N곳”으로 줄였다가 **Shift**를 누르면 펼칩니다. EzWoW 사용자가 게임에서 확인한 상점은 “판매:” 줄로 나오고, 도안에는 도안 자체의 획득처가 붙습니다. |
 | ⑥ | 재료 | 그 재료를 쓰는 제조법 수(**재료 사용처**)와 보유 수량. |
 | ⑦ | 주문 · 오라 | 버프 · 디버프를 **건 사람(직업 색)**, 주문 ID, 아이콘. 툴팁 안의 지나치게 긴 소수점 숫자도 보기 좋게 정리합니다. |
 
@@ -135,7 +135,7 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 
 ![Settings window](docs/images/settings_en.png)
 
-> These are **mock-ups** rebuilt from the sizes, colours and strings in the code. Character/guild names and numbers are made up (a picture stands in for the 3D model).
+> In-game screenshots (WoW Forever, Korean client). Character and player names and chat text are blurred.
 
 ### Installation
 
@@ -143,7 +143,7 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 2. Enable it in the **AddOns** list on the character select screen.
 3. It applies immediately. Settings: `/ezt`.
 
-### What the tooltips show (numbers in the picture)
+### What the tooltips show
 
 | No. | Tooltip | Contents |
 |---|---|---|
@@ -151,7 +151,7 @@ EzWoW - Tooltip turns game tooltips into **clean dark cards** and adds useful in
 | ② | Players | Title, **first name and surname**, guild (rank), level, race, class, zone, **average item level**, **talent split**, mount, movement speed (%), **target of target**, **party members targeting the unit**, PvP rank. Item level and talents are inspected and cached. |
 | ③ | NPCs | Level, elite, type, **current cast**, **your threat (%) and tanking**, target, alive time and layer, drop/quest tracking, NPC ID. |
 | ④ | Gathering skill | Herbs, ore veins and skinnable corpses show the **required and your current skill** in difficulty colours (red, orange, yellow, green, grey), or “not learned”. |
-| ⑤ | Items · compare with equipped | **Korean/English dual name**, sources (dungeon, boss, quest, vendor, craft, world drop… from the bundled `Data/SourceDB.lua`), collection status (appearance, mount, recipe, quest), **bag/bank count**, max stack (Shift), vendor price, **saved AH price** (each/stack, with its age), item ID. With **Compare with equipped gear without Shift** on, the equipped item's tooltip opens next to it (off by default). |
+| ⑤ | Items · compare with equipped | **Korean/English dual name**, sources (dungeon, boss, quest, vendor, craft, world drop… from the bundled `Data/SourceDB.lua`), collection status (appearance, mount, recipe, quest), **bag/bank count**, max stack (Shift), vendor price, **saved AH price** (each/stack, with its age), item ID. With **Compare with equipped gear without Shift** on, the equipped item's tooltip opens next to it (off by default). Source, collection and count lines come as one block under the name; many sources are cut to “+N more” and open with **Shift**. Shops EzWoW users saw in the game show as a “Sold by:” line, and recipes show where the recipe itself comes from. |
 | ⑥ | Reagents | How many recipes use the item (**Used In**) and how many you own. |
 | ⑦ | Spells · auras | **Who cast** a buff/debuff (class-coloured), spell ID, icon. Overly long decimals inside tooltips are tidied up. |
 

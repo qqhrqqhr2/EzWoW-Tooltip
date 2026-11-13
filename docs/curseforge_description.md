@@ -12,7 +12,7 @@ Clean dark card tooltips for WoW Forever, with extra information on players, NPC
 
 ![Settings window](https://raw.githubusercontent.com/qqhrqqhr2/EzWoW-Tooltip/master/docs/images/settings_en.png)
 
-*Mock-ups rebuilt from the sizes, colours and strings in the addon code. Names and numbers are made up.*
+*In-game screenshots (WoW Forever, Korean client). Character and player names and chat text are blurred.*
 
 ## Features
 
@@ -28,6 +28,8 @@ Clean dark card tooltips for WoW Forever, with extra information on players, NPC
 
 ### Items
 - Korean/English names side by side, item sources (dungeon, boss, quest, vendor, craft, world drop), collection status, bag/bank count, max stack, vendor price, saved Auction House price, IDs.
+- Sources, collection and counts come as one block under the name; long source lists show “+N more” and open with **Shift**.
+- Shops EzWoW users saw in the game show as a “Sold by:” line; recipes show where the recipe itself comes from.
 - Reagents show how many recipes use them.
 - **Compare with equipped gear without Shift** (option, off by default).
 - Hover chat links to see their tooltip without clicking.
@@ -74,7 +76,7 @@ WoW Forever용 다크 카드 스타일 툴팁입니다. 플레이어 · NPC · �
 
 ![설정창](https://raw.githubusercontent.com/qqhrqqhr2/EzWoW-Tooltip/master/docs/images/settings_ko.png)
 
-*애드온 코드의 크기 · 색상 · 문구로 재현한 예시 화면입니다. 이름과 숫자는 지어낸 예시입니다.*
+*실제 게임 화면입니다(WoW Forever, 한국어 클라이언트). 캐릭터 · 다른 플레이어 이름과 채팅 내용은 가렸습니다.*
 
 ## 기능
 
@@ -90,6 +92,8 @@ WoW Forever용 다크 카드 스타일 툴팁입니다. 플레이어 · NPC · �
 
 ### 아이템
 - 한 · 영 이름 병기, 획득처(던전 · 보스 · 퀘스트 · 상인 · 제작 · 월드 드랍), 수집 상태, 가방/은행 보유 수량, 최대 겹침, 상점 판매가, 저장된 경매장 시세, ID.
+- 획득처 · 수집 · 보유 줄은 이름 아래 한 묶음으로 나오고, 획득처가 많으면 “외 N곳”으로 줄였다가 **Shift**를 누르면 펼칩니다.
+- EzWoW 사용자가 게임에서 확인한 상점은 “판매:” 줄로, 도안에는 도안 자체의 획득처가 나옵니다.
 - 재료에는 그 재료를 쓰는 제조법 수를 표시합니다.
 - **Shift 없이 착용 장비 비교** (옵션, 기본 꺼짐).
 - 채팅창 링크에 마우스를 올리기만 해도 툴팁 표시.

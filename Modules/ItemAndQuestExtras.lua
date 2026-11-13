@@ -56,7 +56,47 @@ local ITEM_TAGS = {
     ZONE_MISS  = lineTag("000116", true),
     TOKEN_RWD  = lineTag("000117", true),
     AH_PRICE   = lineTag("000118"),
+    SEEN_SRC   = lineTag("000119"),
+    GEAR_INFO  = lineTag("00011a"),
+    REC_MORE   = lineTag("00011b", true),
 }
+
+-- EzWoW-BestGearFinder's item lines (best-in-slot marks, gear sources) are
+-- drawn here too, so all of it is one block
+do
+    local function claim()
+        local bgf = _G.EzWoW_BestGearFinder
+        if type(bgf) == "table" then bgf.tooltipLinesBy = "EzWoW-Tooltip" end
+    end
+    claim()
+    -- (it may load after this addon)
+    local f = CreateFrame("Frame")
+    pcall(f.RegisterEvent, f, "PLAYER_LOGIN")
+    f:SetScript("OnEvent", claim)
+end
+
+-- The recipe source: one line, or one line per source under each other (the
+-- first with the label, the rest with a ring marker)
+local function addRecipeSourceLines(tip, recipeSrcLine)
+    if type(recipeSrcLine) == "string" then
+        tip:AddLine(format("%s|cff8398A6%s:|r %s", ITEM_TAGS.REC_SRC, resolveExtraLocaleText("recipeSource"), recipeSrcLine))
+    elseif type(recipeSrcLine) == "table" then
+        for i, text in ipairs(recipeSrcLine) do
+            if i == 1 then
+                tip:AddLine(format("%s|cff8398A6%s:|r %s", ITEM_TAGS.REC_SRC, resolveExtraLocaleText("recipeSource"), text))
+            else
+                tip:AddLine(ITEM_TAGS.REC_MORE .. "    " .. text)
+            end
+        end
+    end
+end
+
+-- Shops and drops EzWoW users saw in the game (Libs/EzWoWShare) are drawn
+-- here, in this block, instead of under it
+do
+    local share = _G.EzWoW_Share
+    if type(share) == "table" then share.itemLinesBy = "EzWoW-Tooltip" end
+end
 
 -----------------------------------------------------------------------------
 -- Lines another EzWoW addon already shows on the same tooltip
@@ -262,6 +302,43 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
         end
     end
 
+    -- shops and drops seen in the game (shared records)
+    if itemID and not addon:FindLine(tip, "^" .. ITEM_TAGS.SEEN_SRC) then
+        local share = _G.EzWoW_Share
+        if type(share) == "table" and type(share.ItemSourceLines) == "function" then
+            local okLines, lines = pcall(share.ItemSourceLines, itemID)
+            -- EzWoW-BestGearFinder lists where this gear comes from: no second list
+            local okBgf, bgfSources = pcall(ItemQuestEnricher.bestGearCoversSource, tip, itemID)
+            bgfSources = okBgf and bgfSources
+            for index, row in ipairs(okLines and type(lines) == "table" and lines or {}) do
+                if bgfSources then row = nil end
+                if type(row) == "table" and type(row[1]) == "string" and type(row[2]) == "string" then
+                    tip:AddLine(format("%s|cffA7B9C5%s:|r |cffEDF4F7%s|r", ITEM_TAGS.SEEN_SRC, row[1], row[2]))
+                    -- an opened list (Shift) goes down under it
+                    for _, line in ipairs(type(row[3]) == "table" and row[3] or {}) do
+                        if type(line) == "string" then
+                            tip:AddLine(ITEM_TAGS.REC_MORE .. "    |cffEDF4F7" .. line .. "|r")
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- EzWoW-BestGearFinder: best-in-slot marks, and where gear comes from when
+    -- this addon knows no source for it
+    if itemID and not addon:FindLine(tip, "^" .. ITEM_TAGS.GEAR_INFO) then
+        local bgf = _G.EzWoW_BestGearFinder
+        if type(bgf) == "table" and type(bgf.ItemTooltipLines) == "function" then
+            local okGear, gearLines = pcall(bgf.ItemTooltipLines, bgf, tip, itemID)
+            for _, row in ipairs(okGear and type(gearLines) == "table" and gearLines or {}) do
+                if type(row) == "table" and type(row[1]) == "string" then
+                    tip:AddLine(ITEM_TAGS.GEAR_INFO .. row[1], tonumber(row[2]) or 1, tonumber(row[3]) or 1, tonumber(row[4]) or 1, true)
+                end
+            end
+        end
+    end
+
     if itemID and (not iCfg or iCfg.showSourceInfo ~= false) then
         if not addon:FindLine(tip, "^" .. ITEM_TAGS.SOURCE1) then
             local sources, recipeSrcLine, reagLine, primaryLocKey = composeItemSources(itemID, link)
@@ -275,7 +352,7 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
                 tip:AddLine(format("%s|cff8398A6%s:|r %s", ITEM_TAGS.SOURCE2, resolveExtraLocaleText("source2"), sources[2]))
             end
             if recipeSrcLine and not addon:FindLine(tip, "^" .. ITEM_TAGS.REC_SRC) then
-                tip:AddLine(format("%s|cff8398A6%s:|r %s", ITEM_TAGS.REC_SRC, resolveExtraLocaleText("recipeSource"), recipeSrcLine))
+                addRecipeSourceLines(tip, recipeSrcLine)
             end
             if reagLine and not addon:FindLine(tip, "^" .. ITEM_TAGS.REAGENTS) then
                 tip:AddLine(format("%s|cff8398A6%s:|r %s", ITEM_TAGS.REAGENTS, resolveExtraLocaleText("reagents"), reagLine))
@@ -303,14 +380,12 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
                 end
             end
             
-            if primaryLocKey and (primaryLocKey < 0 or hasShift) and not addon:FindLine(tip, "^" .. ITEM_TAGS.ZONE_COL) then
+            -- the dungeon's collection line (Shift only opens the "+N more" lists)
+            if primaryLocKey and primaryLocKey < 0 and not addon:FindLine(tip, "^" .. ITEM_TAGS.ZONE_COL) then
                 local zSummary, zMissing = resolveZoneCollectionSummary(primaryLocKey)
                 if zSummary then
                     local zLabel = (primaryLocKey < 0) and resolveExtraLocaleText("instCollect") or resolveExtraLocaleText("zoneCollect")
                     tip:AddLine(format("%s|cffA7B9C5%s:|r %s", ITEM_TAGS.ZONE_COL, zLabel, zSummary))
-                    if hasShift and zMissing and not addon:FindLine(tip, "^" .. ITEM_TAGS.ZONE_MISS) then
-                        tip:AddLine(format("%s|cff8398A6%s:|r %s", ITEM_TAGS.ZONE_MISS, resolveExtraLocaleText("zoneMissing"), zMissing))
-                    end
                 end
             end
         end
@@ -354,9 +429,6 @@ EventDispatcher:attachTrigger("tooltip:item", function(self, tip, link)
             itemClassID = tonumber(nosecret(classID))
             if not iCfg or iCfg.showItemDetails ~= false then
                 local stack = tonumber(nosecret(itemStackCount)) or 0
-                if hasShift and stack > 1 and not addon:FindLine(tip, "^" .. ITEM_TAGS.MAX_STACK) then
-                    tip:AddLine(format("%s|cffA7B9C5%s:|r |cffEDF4F7%s|r", ITEM_TAGS.MAX_STACK, resolveExtraLocaleText("maxStack"), format(resolveExtraLocaleText("stackFmt"), stack)))
-                end
                 local price = tonumber(nosecret(itemSellPrice)) or 0
                 if price > 0 and not containsSellPrice and not addon:FindLine(tip, "^" .. ITEM_TAGS.SELL_PRICE) then
                     local moneyStr = addon.FormatCopperAsCoinIcons and addon.FormatCopperAsCoinIcons(price)
@@ -441,7 +513,7 @@ EventDispatcher:attachTrigger("tooltip:spell", function(self, tip, spellID)
             tip:AddLine(format("%s|cffA7B9C5%s:|r %s", ITEM_TAGS.SOURCE1, resolveExtraLocaleText("source"), profLine))
         end
         if recipeSrcLine and not addon:FindLine(tip, "^" .. ITEM_TAGS.REC_SRC) then
-            tip:AddLine(format("%s|cff8398A6%s:|r %s", ITEM_TAGS.REC_SRC, resolveExtraLocaleText("recipeSource"), recipeSrcLine))
+            addRecipeSourceLines(tip, recipeSrcLine)
         end
         if reagLine and not addon:FindLine(tip, "^" .. ITEM_TAGS.REAGENTS) then
             tip:AddLine(format("%s|cff8398A6%s:|r %s", ITEM_TAGS.REAGENTS, resolveExtraLocaleText("reagents"), reagLine))

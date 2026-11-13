@@ -427,7 +427,7 @@ function UnitTacticalOverlay.extractNpcTrackingInfo(guid)
         local okM, mID = pcall(C_Map.GetBestMapForUnit, "player")
         if okM and mID and mID > 0 then npcLocKey = nosecret(mID) end
     end
-    if npcLocKey and npcLocKey ~= 0 and (npcLocKey < 0 or IsShiftKeyDown() or trackLine) then
+    if npcLocKey and npcLocKey ~= 0 and (npcLocKey < 0 or trackLine) then
         hasDungeonLoc = (npcLocKey < 0)
         zoneColLine = resolveZoneCollectionSummary(npcLocKey)
     end

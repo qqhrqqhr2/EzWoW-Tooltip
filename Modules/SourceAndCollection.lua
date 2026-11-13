@@ -1046,7 +1046,67 @@ function DropSourceInspector.determineFactionRecipeSource(rSrc)
     return rSrc:gsub("@A:", "|cff4BC8E8[A]|r "):gsub("@H:", "|cffEA837E[H]|r "):gsub("@A ", "|cff4BC8E8[A]|r "):gsub("@H ", "|cffEA837E[H]|r ")
 end
 
-function DropSourceInspector.composeCraftedExtras(rawCraft)
+-- Shift pressed or let go over an item: the tooltip is drawn again, so the
+-- lists that open with Shift follow the key
+do
+    local f = CreateFrame("Frame")
+    pcall(f.RegisterEvent, f, "MODIFIER_STATE_CHANGED")
+    f:SetScript("OnEvent", function(_, key)
+        if key ~= "LSHIFT" and key ~= "RSHIFT" then return end
+        for _, tip in ipairs({ GameTooltip, ItemRefTooltip }) do
+            if tip and tip.IsShown and tip:IsShown() and type(tip.RefreshData) == "function"
+                and type(tip.GetPrimaryTooltipData) == "function" then
+                local okData, data = pcall(tip.GetPrimaryTooltipData, tip)
+                if okData and type(data) == "table" and Enum and Enum.TooltipDataType
+                    and data.type == Enum.TooltipDataType.Item then
+                    pcall(tip.RefreshData, tip)
+                    -- rows that held a name line before keep its small font: sized again
+                    local sizer = _G.EzWoWTooltipTagSizer
+                    if sizer and sizer.Refit then pcall(sizer.Refit, tip) end
+                end
+            end
+        end
+    end)
+end
+
+-- recipe spell -> its scroll items (from the recipe item table)
+local scrollsBySpell
+function DropSourceInspector.recipeScrollSources(spellID, itemID)
+    if not scrollsBySpell then
+        scrollsBySpell = {}
+        for itemID, spell in pairs(addon.RecipeItemDB or {}) do
+            if type(itemID) == "number" and type(spell) == "number" then
+                local list = scrollsBySpell[spell] or {}
+                scrollsBySpell[spell] = list
+                list[#list + 1] = itemID
+            end
+        end
+    end
+    local parts, seen = {}, {}
+    -- records the item itself already lists (a quest that gives both) stay there
+    local own = {}
+    local ownRaw = itemID and addon.ItemSourceDB and addon.ItemSourceDB[itemID]
+    if type(ownRaw) == "string" then
+        for rec in ownRaw:gmatch("([^;]+)") do own[rec] = true end
+    end
+    for _, scrollID in ipairs(scrollsBySpell[spellID] or {}) do
+        local raw = addon.ItemSourceDB and addon.ItemSourceDB[scrollID]
+        if type(raw) == "string" and raw ~= "" then
+            for recordItem in raw:gmatch("([^;]+)") do
+                local okRec, text = false, nil
+                if not own[recordItem] then okRec, text = pcall(DropSourceInspector.composeSingleSourceRecord, recordItem) end
+                if okRec and type(text) == "string" and text ~= "" and not seen[text] and #parts < 8 then
+                    seen[text] = true
+                    parts[#parts + 1] = text
+                end
+            end
+        end
+    end
+    if #parts == 0 then return nil end
+    return parts
+end
+
+function DropSourceInspector.composeCraftedExtras(rawCraft, itemID)
     if not rawCraft or rawCraft == "" then return nil, nil, nil, false end
     local spellStr, profStr, skillStr, catKo, catEn, reagStr, srcKo, srcEn = strsplit("|", rawCraft)
     local spellID = tonumber(spellStr) or 0
@@ -1071,9 +1131,39 @@ function DropSourceInspector.composeCraftedExtras(rawCraft)
 
     local rSrc = (userPref == "koKR") and ((srcKo and srcKo ~= "" and srcKo) or srcEn) or srcEn
     rSrc = DropSourceInspector.determineFactionRecipeSource(rSrc)
+    -- one line per source: with Shift every source of the recipe scroll itself
+    -- (the text above names one and counts the rest)
+    local recipeParts = {}
+    local full = (spellID > 0 and IsShiftKeyDown()) and DropSourceInspector.recipeScrollSources(spellID, itemID) or nil
+    if full then
+        for _, text in ipairs(full) do recipeParts[#recipeParts + 1] = text end
+    elseif rSrc and rSrc ~= "" then
+        recipeParts[#recipeParts + 1] = format("|cffF1BD57%s|r", rSrc)
+    end
+    -- the recipe scroll's shops and drops EzWoW users saw in the game
+    local share = _G.EzWoW_Share
+    if spellID > 0 and type(share) == "table" and type(share.RecipeSourceLines) == "function" then
+        local spellName
+        if C_Spell and C_Spell.GetSpellName then
+            local okName, n = pcall(C_Spell.GetSpellName, spellID)
+            if okName and type(n) == "string" then spellName = nosecret(n) end
+        end
+        local okLines, lines = pcall(share.RecipeSourceLines, spellName)
+        for _, row in ipairs(okLines and type(lines) == "table" and lines or {}) do
+            if type(row) == "table" and type(row[1]) == "string" and type(row[2]) == "string" then
+                recipeParts[#recipeParts + 1] = format("|cffA7B9C5%s:|r |cffEDF4F7%s|r", row[1], row[2])
+                for _, line in ipairs(type(row[3]) == "table" and row[3] or {}) do
+                    if type(line) == "string" then recipeParts[#recipeParts + 1] = "|cffEDF4F7" .. line .. "|r" end
+                end
+            end
+        end
+    end
+    -- one text, or a list of lines when there are several (drawn one under another)
     local recipeSrcLine
-    if rSrc and rSrc ~= "" then
-        recipeSrcLine = format("|cffF1BD57%s|r", rSrc)
+    if #recipeParts == 1 then
+        recipeSrcLine = recipeParts[1]
+    elseif #recipeParts > 1 then
+        recipeSrcLine = recipeParts
     end
 
     local reagLine
@@ -1127,12 +1217,12 @@ function DropSourceInspector.composeItemSources(itemID, itemLink)
     local craftedRaw = addon.CraftedItemDB and addon.CraftedItemDB[itemID]
     local profLine, recipeSrcLine, reagLine, hasLearned
     if craftedRaw then
-        profLine, recipeSrcLine, reagLine, hasLearned = DropSourceInspector.composeCraftedExtras(craftedRaw)
+        profLine, recipeSrcLine, reagLine, hasLearned = DropSourceInspector.composeCraftedExtras(craftedRaw, itemID)
         if profLine then
             outputList[#outputList + 1] = profLine
         end
-        if hasLearned and not IsShiftKeyDown() then
-            recipeSrcLine = nil
+        -- learned: no reagents line (Shift only opens the "+N more" lists)
+        if hasLearned then
             reagLine = nil
         end
     end
@@ -1178,8 +1268,15 @@ function DropSourceInspector.composeItemSources(itemID, itemLink)
                 outputList[#outputList + 1] = format("|cffAEE26A[%s]|r |cffEDF4F7%s%s|r |cff8398A6·|r |cffF1BD57%s|r", resolveExtraLocaleText("srcGather"), profName, skillTxt, table.concat(gZones, ", "))
             end
         else
+            -- shops seen in the game sell it: their line (EzWoW shared records)
+            -- stands for the vendors, the older vendor records are left out
+            local share = _G.EzWoW_Share
+            local seenVendors = share and type(share.GetVendors) == "function" and share.GetVendors(itemID)
+            local skipVendors = type(seenVendors) == "table" and #seenVendors > 0
             for recordItem in raw:gmatch("([^;]+)") do
-                if #outputList < 2 and not (profLine and recordItem:find("^P:")) then
+                if skipVendors and (recordItem:find("^V:") or recordItem:find("^VN:")) then
+                    -- left out
+                elseif #outputList < 2 and not (profLine and recordItem:find("^P:")) then
                     local fmtRec, locKey = DropSourceInspector.composeSingleSourceRecord(recordItem)
                     if locKey and not primaryLocKey then primaryLocKey = locKey end
                     if fmtRec and fmtRec ~= outputList[1] then
