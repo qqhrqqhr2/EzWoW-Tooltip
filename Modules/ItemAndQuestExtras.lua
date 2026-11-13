@@ -95,7 +95,13 @@ end
 -- here, in this block, instead of under it
 do
     local share = _G.EzWoW_Share
-    if type(share) == "table" then share.itemLinesBy = "EzWoW-Tooltip" end
+    if type(share) == "table" then
+        share.itemLinesBy = "EzWoW-Tooltip"
+        -- the lines follow this addon's language setting
+        if type(share.SetLanguageSource) == "function" then
+            share.SetLanguageSource("EzWoW-Tooltip", addon.GetActiveLocale)
+        end
+    end
 end
 
 -----------------------------------------------------------------------------
