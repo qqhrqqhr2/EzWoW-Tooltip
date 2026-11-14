@@ -1211,6 +1211,55 @@ function DropSourceInspector.composeReagentUsage(itemID)
     return nil
 end
 
+-- Quests that give an item, from what EzWoW users saw (shared records "W",
+-- this character's and received, and the shipped ones): itemID -> { questID, ... }.
+-- The lookup is made again at most every 30 seconds.
+function DropSourceInspector.sharedQuestRewards(itemID)
+    local cache = DropSourceInspector.rewardIndex
+    local now = (GetTime and GetTime()) or 0
+    if not cache or now - (cache.at or 0) > 30 then
+        cache = { at = now, items = {} }
+        local function add(questID, list)
+            for _, id in ipairs(type(list) == "table" and list or {}) do
+                if type(id) == "number" then
+                    local quests = cache.items[id]
+                    if not quests then
+                        quests = {}
+                        cache.items[id] = quests
+                    end
+                    local known = false
+                    for _, q in ipairs(quests) do if q == questID then known = true end end
+                    if not known and #quests < 5 then quests[#quests + 1] = questID end
+                end
+            end
+        end
+        local share = _G.EzWoW_Share
+        if type(share) == "table" then
+            if type(share.Store) == "function" and type(share.GetQuestRewards) == "function" then
+                local okRows, rows = pcall(share.Store, "W")
+                for questID in pairs(okRows and type(rows) == "table" and rows or {}) do
+                    if type(questID) == "number" then
+                        local okRw, rw = pcall(share.GetQuestRewards, questID)
+                        if okRw and type(rw) == "table" then
+                            add(questID, rw.r)
+                            add(questID, rw.c)
+                        end
+                    end
+                end
+            end
+            local seed = type(share.Seed) == "function" and share.Seed("rewards")
+            for questID, row in pairs(type(seed) == "table" and seed or {}) do
+                if type(questID) == "number" and type(row) == "table" then
+                    add(questID, row.r)
+                    add(questID, row.c)
+                end
+            end
+        end
+        DropSourceInspector.rewardIndex = cache
+    end
+    return cache.items[itemID]
+end
+
 function DropSourceInspector.composeItemSources(itemID, itemLink)
     local outputList = {}
     local primaryLocKey = nil
@@ -1287,6 +1336,16 @@ function DropSourceInspector.composeItemSources(itemID, itemLink)
         end
     end
 
+    -- quests that give it, from EzWoW users' records (when the data names no quest)
+    if #outputList < 2 and not (raw and (raw:find("^Q:") or raw:find(";Q:"))) then
+        for _, questID in ipairs(DropSourceInspector.sharedQuestRewards(itemID) or {}) do
+            if #outputList >= 2 then break end
+            local qTitle = DropSourceInspector.determineQuestName(questID) or ("#" .. questID)
+            local qBadge = DropSourceInspector.hasQuestCompleted(questID)
+                and format(" |cffAEE26A[%s]|r", resolveExtraLocaleText("collected")) or ""
+            outputList[#outputList + 1] = format("|cffF1BD57[%s]|r |cffF1BD57%s|r%s", resolveExtraLocaleText("srcQuest"), qTitle, qBadge)
+        end
+    end
     if #outputList == 0 and C_TransmogCollection and C_TransmogCollection.GetItemInfo and C_TransmogCollection.GetAppearanceSourceDrops then
         local isCallOk, _, sourceID = pcall(C_TransmogCollection.GetItemInfo, itemLink or itemID)
         sourceID = isCallOk and nosecret(sourceID)
