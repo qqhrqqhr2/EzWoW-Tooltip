@@ -1304,6 +1304,20 @@ function DropSourceInspector.composeItemSources(itemID, itemLink)
             end
         end
     end
+    -- nothing else known (new Forever items): the game's own kind of source from
+    -- the appearance collection (boss drop, quest, vendor, world drop, profession...)
+    if #outputList == 0 and C_TransmogCollection and C_TransmogCollection.GetItemInfo and C_TransmogCollection.GetSourceInfo then
+        local isCallOk, _, sourceID = pcall(C_TransmogCollection.GetItemInfo, itemLink or itemID)
+        sourceID = isCallOk and nosecret(sourceID)
+        if type(sourceID) == "number" and sourceID > 0 then
+            local okInfo, apiInfo = pcall(C_TransmogCollection.GetSourceInfo, sourceID)
+            local sourceType = okInfo and type(apiInfo) == "table" and nosecret(apiInfo.sourceType)
+            local text = type(sourceType) == "number" and sourceType > 0 and _G["TRANSMOG_SOURCE_" .. sourceType]
+            if type(text) == "string" and text ~= "" then
+                outputList[#outputList + 1] = format("|cff8398A6[%s]|r", text)
+            end
+        end
+    end
     return outputList, recipeSrcLine, reagLine, primaryLocKey
 end
 
